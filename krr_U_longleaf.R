@@ -93,7 +93,8 @@ print(paste0("linear ridge within class performance:", as.character(mse.ridge.X.
 
 # kernel ridge
 lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
-ml.krr.X.class = lapply(1:3, function(ix) cv.regkrr(X.train.list[[ix]], Y.train.list[[ix]], gamma = .01, lambda.vec = lambda.vec))
+gamma = gamma
+ml.krr.X.class = lapply(1:3, function(ix) cv.regkrr(X.train.list[[ix]], Y.train.list[[ix]], gamma = gamma, lambda.vec = lambda.vec))
 Yhat.krr.X.class.test = lapply(1:3, function(ix) regkrr$predict(ml.krr.X.class[[ix]]$best.ml, data.krr.test.list[[ix]]))
 mse.krr.X.class.vec = sapply(1:3, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.krr.X.class.test[[ix]]-Y.test.list[[ix]])^2))
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
