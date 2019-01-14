@@ -1,4 +1,5 @@
 library(kernlab)
+library(CVST)
 X2U = function(X, K=50, plot = T){
   n = nrow(X)
 #  p = ncol(X)
@@ -245,3 +246,19 @@ cv.krr = function(K, Y, lambda.vec, nfolds){
   best.ml = krr(K, Y, lambda.min)
   return(list(best.ml = best.ml, mse.vec = mse.vec, lambda.min = lambda.min))
 }
+
+
+regkrr = constructKRRLearner()
+cv.regkrr = function(X, Y, gamma = NULL, nfolds = 10, lambda.vec){
+  p = dim(X)[2]
+  if (is.null(gamma)){
+    gamma = 1/p
+  }
+  data.train = constructData(X, Y)
+  params = constructParams(kernel="rbfdot", sigma=gamma, lambda=lambda.vec)
+  best.para = CV(data.train, regkrr, params, fold = nfolds, verbose = F)
+  m = regkrr$learn(data.train, best.para[[1]])
+  best.lam = best.para[[1]]$lambda
+  return(list(best.ml = m, lambda.min = best.lam))
+}
+

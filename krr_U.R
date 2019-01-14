@@ -4,21 +4,33 @@ library(randomForest)
 library(e1071)
 library(CVST)
 
-source('~/Documents/Research/coding/R/alpha/functions.R')
+source('/Users/MonicaW/Documents/GitHub/alpha/functions.R')
 load("~/Documents/Research/coding/R/realdata/ADNI1.RData")
 load("~/Documents/Research/coding/R/realdata/myseeds.RData")
 
-X = X[-c(112, 151, 167, 171, 770),]
-label = label[-c(112, 151, 167, 171, 770)]
-Y = Y[-c(112, 151, 167, 171, 770)]
+X = X[-c(167,770),]
+label = label[-c(167,770)]
+Y = Y[-c(167,770)]
+
+X = X[-151,]
+label = label[-151]
+Y = Y[-151]
+
+X = X[-c(112,169),]
+label = label[-c(112,169)]
+Y = Y[-c(112,169)]
+
+X = X[-c(70,126),]
+label = label[-c(70,126)]
+Y = Y[-c(70,126)]
 
 n = dim(X)[1]
 p = dim(X)[2]
 
 mse.U.vec.list = list()
 mse.U.list = list()
-for (i in 1:50){
-  set.seed(myseeds[i])
+for (ii in 1:50){
+  set.seed(myseeds[ii])
   # set.seed(76)
   ix.train = unlist(createDataPartition(label, times = 1, p = 3/4))
   ix.test = (1:n)[-ix.train]
@@ -68,6 +80,13 @@ for (i in 1:50){
   data.train.list = lapply(1:3, function(ix) data.frame(Y=Y.train.list[[ix]], X.train.list[[ix]]))
   data.test.list = lapply(1:3, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
   
+  # ridge
+  ml.ridge.X.class = lapply(1:3, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
+  Yhat.ridge.X.class.test = lapply(1:3, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
+  mse.ridge.X.class.vec = sapply(1:3, function(ix)  Y.train.sd[[ix]]^2*mean((Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+  mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
+  print(paste0("ridge within class performance:", as.character(mse.ridge.X.class)))
+  
   # ------------------------------- ALPHA -----------------------------------------
   mycut = X2U4(X.train.list, plot = T)
   X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
@@ -89,13 +108,15 @@ for (i in 1:50){
   mse.ridge.U.vec = sapply(1:3, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.ridge.U.test[[ix]]-Y.test.list[[ix]])^2))
   mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
   
+  print(paste0("linear PCA linear ridge performance:", as.character(mse.ridge.U)))
+  
   # kernel ridge
-  gamma = .001
+  gamma = .01
   data.U.train = constructData(U.train, Y_.train)
   krr.U = constructKRRLearner()
   lambda.vec = exp(1)^seq(log(10^-4), log(10^0), length.out = 100)
   params = constructParams(kernel="rbfdot", sigma=gamma, lambda=lambda.vec)
-  best.para = CV(data.U.train, krr.U, params, fold = 10, verbose = T)
+  best.para = CV(data.U.train, krr.U, params, fold = 10, verbose = F)
   m = krr.U$learn(data.U.train, best.para[[1]])
   data.test = constructData(X.test, Y.test)
   Yhat.kridge.U.test = krr.U$predict(m, data.test)
@@ -103,9 +124,9 @@ for (i in 1:50){
   mse.kridge.U.vec = sapply(1:3, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.kridge.U.test[[ix]]-Y.test.list[[ix]])^2))
   mse.kridge.U = sum(mse.kridge.U.vec*n.test.vec)/sum(n.test.vec)
   
-  
+  print(paste0("linear PCA kernel ridge performance:", as.character(mse.kridge.U)))
   # ------------------------------ kernel PCA -----------------------------------------
-  gamma = .001
+  gamma = .01
   mycut = X2U4.kernel(X.train.list, gamma = gamma, plot = T)
   X2U.list = lapply(X.train.list, function(X)  X2U.kernel.cut(X, mycut))
   
@@ -115,8 +136,6 @@ for (i in 1:50){
   Y_.train = do.call(c, Y_.list)
   
   # construct kernel matrix
-
-  
   # demeaned kernel matrix for training
   K.mat = matrix(0, nrow = n.train, ncol = n.train)
   ix.vec = c(0,cumsum(n.train.vec))
@@ -151,5 +170,23 @@ for (i in 1:50){
   mse.krr.U.vec = sapply(1:3, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.krr.U.test[[ix]]-Y.test.list[[ix]])^2))
   mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
   
+  print(paste0("kernel PCA kernel ridge performance:", as.character(mse.krr.U)))
+  
+  mse.U.vec = rbind(mse.ridge.X.class.vec, mse.ridge.U.vec, mse.kridge.U.vec, mse.krr.U.vec)
+  mse.U = c(mse.ridge.X.class, mse.ridge.U, mse.kridge.U, mse.krr.U)
+  names(mse.U) = c("ridge.class", "ridge", "kridge", "krr")
+  mse.U.vec.list[[ii]] = mse.U.vec
+  mse.U.list[[ii]] = mse.U
 }
+mse.U.result = do.call(rbind, mse.U.list)
+mse.U.vec.result = array(as.numeric(unlist(mse.U.vec.list)), dim=c(3, 3, 50))
+mse.U.vec.result = aperm(mse.U.vec.result, c(3, 1, 2))
 
+save(mse.U.result, mse.U.vec.result, file = "krr_U_1.RData")
+
+mse.U.result
+
+ii = 21
+ii = 32
+mse.U.result[21, 3] = 13.98474
+mse.U.result[32, 3] = 19.99298

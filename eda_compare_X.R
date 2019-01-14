@@ -2,13 +2,13 @@ library(caret)
 library(glmnet)
 library(randomForest)
 library(e1071)
-
+library(CVST)
 # bc = BoxCoxTrans(Y)
 # Y = predict(bc, Y)
 # boxplot(Y[Y<7.98])
 # bcb = function(Y, bc) {return((Y*bc$lambda+1)^{1/bc$lambda})}
 
-source('~/Documents/Research/coding/R/alpha/functions.R')
+source('/Users/MonicaW/Documents/GitHub/alpha/functions.R')
 load("~/Documents/Research/coding/R/realdata/ADNI1.RData")
 load("~/Documents/Research/coding/R/realdata/myseeds.RData")
 
@@ -19,6 +19,14 @@ Y = Y[-c(167,770)]
 X = X[-151,]
 label = label[-151]
 Y = Y[-151]
+
+X = X[-c(112,169),]
+label = label[-c(112,169)]
+Y = Y[-c(112,169)]
+
+X = X[-c(70,126),]
+label = label[-c(70,126)]
+Y = Y[-c(70,126)]
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -51,6 +59,8 @@ for (i in 1:50){
   # lm
   data.train = data.frame(Y = Y.train, X.train)
   data.test = data.frame(Y = Y.test, X.test)
+  data.krr.test = constructData(y = Y.test, x=X.test)
+  
   ml.lm.X = lm(Y~., data = data.train)
   Yhat.lm.X.test = predict(ml.lm.X, newdata = data.test[, -1])
   mse.lm.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.lm.X.test[label.test==l] - Y.test[label.test==l])^2))
@@ -68,22 +78,29 @@ for (i in 1:50){
   mse.ridge.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.ridge.X.test[label.test==l] - Y.test[label.test==l])^2))
   mse.ridge.X = mean((Yhat.ridge.X.test - Y.test)^2)
   
-  # rf
-  ml.rf.X = randomForest(x = X.train, y = Y.train)
-  Yhat.rf.X.test = predict(ml.rf.X, newdata = X.test)
-  mse.rf.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.rf.X.test[label.test==l] - Y.test[label.test==l])^2))
-  mse.rf.X = mean((Yhat.rf.X.test - Y.test)^2)
+  # krr
+  lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
+  ml.krr.X = cv.regkrr(X.train, Y.train, gamma = .01, lambda.vec = lambda.vec)
+  Yhat.krr.X.test = regkrr$predict(ml.krr.X$best.ml, data.krr.test)
+  mse.krr.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.krr.X.test[label.test==l] - Y.test[label.test==l])^2))
+  mse.krr.X = mean((Yhat.krr.X.test - Y.test)^2)
   
-  # svr
-  ml.svr.radial.X = tune.svm(Y~., data = data.train, cost = 10^(-4:0), kernel = "radial")
-  Yhat.svr.radial.X.test = predict(ml.svr.radial.X$best.model, newdata = data.test[, -1])
-  mse.svr.radial.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.svr.radial.X.test[label.test==l] - Y.test[label.test==l])^2))
-  mse.svr.radial.X = mean((Yhat.svr.radial.X.test - Y.test)^2)  
-  
-  ml.svr.linear.X = tune.svm(Y~., data = data.train, cost = 10^(-4:0), kernel = "linear")
-  Yhat.svr.linear.X.test = predict(ml.svr.linear.X$best.model, newdata = data.test[, -1])
-  mse.svr.linear.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.svr.linear.X.test[label.test==l] - Y.test[label.test==l])^2))
-  mse.svr.linear.X = mean((Yhat.svr.linear.X.test - Y.test)^2) 
+  # # rf
+  # ml.rf.X = randomForest(x = X.train, y = Y.train)
+  # Yhat.rf.X.test = predict(ml.rf.X, newdata = X.test)
+  # mse.rf.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.rf.X.test[label.test==l] - Y.test[label.test==l])^2))
+  # mse.rf.X = mean((Yhat.rf.X.test - Y.test)^2)
+  # 
+  # # svr
+  # ml.svr.radial.X = tune.svm(Y~., data = data.train, cost = 10^(-4:0), kernel = "radial")
+  # Yhat.svr.radial.X.test = predict(ml.svr.radial.X$best.model, newdata = data.test[, -1])
+  # mse.svr.radial.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.svr.radial.X.test[label.test==l] - Y.test[label.test==l])^2))
+  # mse.svr.radial.X = mean((Yhat.svr.radial.X.test - Y.test)^2)  
+  # 
+  # ml.svr.linear.X = tune.svm(Y~., data = data.train, cost = 10^(-4:0), kernel = "linear")
+  # Yhat.svr.linear.X.test = predict(ml.svr.linear.X$best.model, newdata = data.test[, -1])
+  # mse.svr.linear.X.vec = sapply(c(4,3,0), function(l) mean((Yhat.svr.linear.X.test[label.test==l] - Y.test[label.test==l])^2))
+  # mse.svr.linear.X = mean((Yhat.svr.linear.X.test - Y.test)^2) 
   
   # ------------------------------- groupwise model ---------------------------------
   X.train.list = lapply(c(4,3,0), function(l) X.train[label.train == l,])
@@ -110,6 +127,8 @@ for (i in 1:50){
   data.train.list = lapply(1:3, function(ix) data.frame(Y=Y.train.list[[ix]], X.train.list[[ix]]))
   data.test.list = lapply(1:3, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
   
+  data.krr.test.list = lapply(1:3, function(ix) constructData(y=Y.test.list[[ix]], x=X.test.list[[ix]]))
+  
   # lm
   ml.lm.X.class = lapply(1:3, function(ix) lm(Y~., data=data.train.list[[ix]]))
   Yhat.lm.X.class.test = lapply(1:3, function(ix) predict(ml.lm.X.class[[ix]], newdata = data.test.list[[ix]][, -1]))
@@ -129,11 +148,19 @@ for (i in 1:50){
   mse.ridge.X.class.vec = sapply(1:3, function(ix) mean((Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])^2))
   mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
   
-  # rf
-  ml.rf.X.class = lapply(1:3, function(ix) randomForest(x = X.train.list[[ix]], y = Y.train.list[[ix]]))
-  Yhat.rf.X.class.test = lapply(1:3, function(ix) predict(ml.rf.X.class[[ix]], newdata = X.test.list[[ix]]))
-  mse.rf.X.class.vec = sapply(1:3, function(ix) mean((Yhat.rf.X.class.test[[ix]]-Y.test.list[[ix]])^2))
-  mse.rf.X.class = sum(mse.rf.X.class.vec*n.test.vec)/sum(n.test.vec)
+  # kernel ridge
+  lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
+  ml.krr.X.class = lapply(1:3, function(ix) cv.regkrr(X.train.list[[ix]], Y.train.list[[ix]], gamma = .01, lambda.vec = lambda.vec))
+  Yhat.krr.X.class.test = lapply(1:3, function(ix) regkrr$predict(ml.krr.X.class[[ix]]$best.ml, data.krr.test.list[[ix]]))
+  mse.krr.X.class.vec = sapply(1:3, function(ix) mean((Yhat.krr.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+  mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
+  print(c(mse.ridge.X.class, mse.krr.X.class))
+  
+  # # rf
+  # ml.rf.X.class = lapply(1:3, function(ix) randomForest(x = X.train.list[[ix]], y = Y.train.list[[ix]]))
+  # Yhat.rf.X.class.test = lapply(1:3, function(ix) predict(ml.rf.X.class[[ix]], newdata = X.test.list[[ix]]))
+  # mse.rf.X.class.vec = sapply(1:3, function(ix) mean((Yhat.rf.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+  # mse.rf.X.class = sum(mse.rf.X.class.vec*n.test.vec)/sum(n.test.vec)
   
   # svr
   # ml.svr.X.class = lapply(1:3, function(ix) svm(Y~., data=data.train.list[[ix]]))
@@ -142,28 +169,33 @@ for (i in 1:50){
   # mse.svr.X.class.vec = sapply(1:3, function(ix) mean((Yhat.svr.X.class.test[[ix]]-Y.test.list[[ix]])^2))
   # mse.svr.X.class = sum(mse.svr.X.class.vec*n.test.vec)/sum(n.test.vec)
   
-  ml.svr.radial.X.class = lapply(1:3, function(ix) tune.svm(Y~., data=data.train.list[[ix]], cost = 10^(-4:0), kernel = "radial"))
-  Yhat.svr.radial.X.class.test = lapply(1:3, function(ix) predict(ml.svr.radial.X.class[[ix]]$best.model, newdata = data.test.list[[ix]][, -1]))
-  # do not divide sd
-  mse.svr.radial.X.class.vec = sapply(1:3, function(ix) mean((Yhat.svr.radial.X.class.test[[ix]]-Y.test.list[[ix]])^2))
-  mse.svr.radial.X.class = sum(mse.svr.radial.X.class.vec*n.test.vec)/sum(n.test.vec)
+  # ml.svr.radial.X.class = lapply(1:3, function(ix) tune.svm(Y~., data=data.train.list[[ix]], cost = 10^(-4:0), kernel = "radial"))
+  # Yhat.svr.radial.X.class.test = lapply(1:3, function(ix) predict(ml.svr.radial.X.class[[ix]]$best.model, newdata = data.test.list[[ix]][, -1]))
+  # # do not divide sd
+  # mse.svr.radial.X.class.vec = sapply(1:3, function(ix) mean((Yhat.svr.radial.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+  # mse.svr.radial.X.class = sum(mse.svr.radial.X.class.vec*n.test.vec)/sum(n.test.vec)
   
-  ml.svr.linear.X.class = lapply(1:3, function(ix) tune.svm(Y~., data=data.train.list[[ix]], cost = 10^(-4:0), kernel = "linear"))
-  Yhat.svr.linear.X.class.test = lapply(1:3, function(ix) predict(ml.svr.linear.X.class[[ix]]$best.model, newdata = data.test.list[[ix]][, -1]))
-  # do not divide sd
-  mse.svr.linear.X.class.vec = sapply(1:3, function(ix) mean((Yhat.svr.linear.X.class.test[[ix]]-Y.test.list[[ix]])^2))
-  mse.svr.linear.X.class = sum(mse.svr.linear.X.class.vec*n.test.vec)/sum(n.test.vec)
+  # ml.svr.linear.X.class = lapply(1:3, function(ix) tune.svm(Y~., data=data.train.list[[ix]], cost = 10^(-4:0), kernel = "linear"))
+  # Yhat.svr.linear.X.class.test = lapply(1:3, function(ix) predict(ml.svr.linear.X.class[[ix]]$best.model, newdata = data.test.list[[ix]][, -1]))
+  # # do not divide sd
+  # mse.svr.linear.X.class.vec = sapply(1:3, function(ix) mean((Yhat.svr.linear.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+  # mse.svr.linear.X.class = sum(mse.svr.linear.X.class.vec*n.test.vec)/sum(n.test.vec)
   
-  mse.X.vec = rbind(mse.lm.X.class.vec, mse.lasso.X.class.vec, mse.ridge.X.class.vec, mse.rf.X.class.vec, mse.svr.radial.X.class.vec, mse.svr.linear.X.class.vec, mse.lm.X.vec, mse.lasso.X.vec, mse.ridge.X.vec, mse.rf.X.vec, mse.svr.radial.X.vec, mse.svr.linear.X.vec, mse.mean.vec)
-  mse.X = c(mse.lm.X.class, mse.lasso.X.class, mse.ridge.X.class, mse.rf.X.class, mse.svr.radial.X.class, mse.svr.linear.X.class, mse.lm.X, mse.lasso.X, mse.ridge.X, mse.rf.X, mse.svr.radial.X, mse.svr.linear.X, mse.mean)
-  names(mse.X) = c("lm.X.class", "lasso.X.class", "ridge.X.class", "rf.X.class", "svr.radial.X.class", "svr.linear.X.class", "lm.X", "lasso.X", "ridge.X", "rf.X", "svr.radial.X", "svr.linear.X", "group_mean")
+  # mse.X.vec = rbind(mse.lm.X.class.vec, mse.lasso.X.class.vec, mse.ridge.X.class.vec, mse.rf.X.class.vec, mse.svr.radial.X.class.vec, mse.svr.linear.X.class.vec, mse.lm.X.vec, mse.lasso.X.vec, mse.ridge.X.vec, mse.rf.X.vec, mse.svr.radial.X.vec, mse.svr.linear.X.vec, mse.mean.vec)
+  # mse.X = c(mse.lm.X.class, mse.lasso.X.class, mse.ridge.X.class, mse.rf.X.class, mse.svr.radial.X.class, mse.svr.linear.X.class, mse.lm.X, mse.lasso.X, mse.ridge.X, mse.rf.X, mse.svr.radial.X, mse.svr.linear.X, mse.mean)
+  # names(mse.X) = c("lm.X.class", "lasso.X.class", "ridge.X.class", "rf.X.class", "svr.radial.X.class", "svr.linear.X.class", "lm.X", "lasso.X", "ridge.X", "rf.X", "svr.radial.X", "svr.linear.X", "group_mean")
+  
+  mse.X.vec = rbind(mse.lm.X.class.vec, mse.lasso.X.class.vec, mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.lm.X.vec, mse.lasso.X.vec, mse.ridge.X.vec, mse.krr.X.vec, mse.mean.vec)
+  mse.X = c(mse.lm.X.class, mse.lasso.X.class, mse.ridge.X.class, mse.krr.X.class, mse.lm.X, mse.lasso.X, mse.ridge.X, mse.krr.X, mse.mean)
+  names(mse.X) = c("lm.X.class", "lasso.X.class", "ridge.X.class", "krr.X.class", "lm.X", "lasso.X", "ridge.X", "krr.X", "group_mean")
+  
   mse.X.vec.list[[i]] = mse.X.vec
   mse.X.list[[i]] = mse.X
 }
 
 mse.X.result = do.call(rbind, mse.X.list)
-mse.X.vec.result = array(as.numeric(unlist(mse.X.vec.list)), dim=c(11, 3, 50))
+mse.X.vec.result = array(as.numeric(unlist(mse.X.vec.list)), dim=c(9, 3, 50))
 mse.X.vec.result = aperm(mse.X.vec.result, c(3, 1, 2))
 
-save(mse.X.result, mse.X.vec.result, file = "compare_X_0.RData")
+save(mse.X.result, mse.X.vec.result, file = "compare_X_1.RData")
 
