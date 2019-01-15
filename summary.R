@@ -178,3 +178,23 @@ xtable(t(global.result))
 load("/Users/MonicaW/Documents/Research/coding/R/alpha/scale_Y_X2U4_2.RData")
 U.result = rbind(apply(mse.U.result, 2, mean), apply(mse.U.result, 2, sd))
 xtable(t(U.result))
+
+# 1/14
+getwd()
+setwd("/Users/MonicaW/Documents/Research/coding/R/alpha/result")
+
+library(readr)
+gamma_2 <- read_csv("gamma_2.csv", col_names = FALSE)
+result = cbind(apply(gamma_2, 2, mean), apply(gamma_2, 2, sd))
+
+colnames(result) = c("", "", "", "", "")
+
+gamma_0 <- read_csv("gamma_0.csv", col_names = FALSE)
+apply(gamma_0, 2, mean)
+
+gamma_1 <- read_csv("gamma_1.csv", col_names = FALSE)
+apply(gamma_1, 2, mean)
+
+gamma_3 <- read_csv("gamma_3.csv", col_names = FALSE)
+apply(gamma_3, 2, mean)
+

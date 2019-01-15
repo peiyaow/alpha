@@ -105,7 +105,7 @@ mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 print(paste0("kernel ridge within class performance:", as.character(mse.krr.X.class)))
 
 # ------------------------------- ALPHA -----------------------------------------
-mycut = X2U4(X.train.list, plot = F)
+mycut = X2U4(X.train.list, plot = T)
 X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
@@ -133,7 +133,7 @@ data.U.train = constructData(U.train, Y_.train)
 krr.U = constructKRRLearner()
 lambda.vec = exp(1)^seq(log(10^-4), log(10^0), length.out = 100)
 params = constructParams(kernel="rbfdot", sigma=gamma, lambda=lambda.vec)
-best.para = CV(data.U.train, krr.U, params, fold = 10, verbose = T)
+best.para = CV(data.U.train, krr.U, params, fold = 10, verbose = F)
 m = krr.U$learn(data.U.train, best.para[[1]])
 data.test = constructData(X.test, Y.test)
 Yhat.kridge.U.test = krr.U$predict(m, data.test)
@@ -144,7 +144,7 @@ mse.kridge.U = sum(mse.kridge.U.vec*n.test.vec)/sum(n.test.vec)
 print(paste0("linear PCA kernel ridge performance:", as.character(mse.kridge.U)))
 # ------------------------------ kernel PCA -----------------------------------------
 gamma = gamma
-mycut = X2U4.kernel(X.train.list, gamma = gamma, plot = F)
+mycut = X2U4.kernel(X.train.list, gamma = gamma, plot = T)
 X2U.list = lapply(X.train.list, function(X)  X2U.kernel.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
