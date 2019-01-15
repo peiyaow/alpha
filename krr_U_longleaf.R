@@ -11,6 +11,7 @@ library(glmnet)
 library(randomForest)
 library(e1071)
 library(CVST)
+require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI1.RData")
@@ -82,6 +83,8 @@ X.test.list = lapply(1:3, function(ix) sweep(X.test.list[[ix]], 2, X.train.mean[
 # data.frame format
 data.train.list = lapply(1:3, function(ix) data.frame(Y=Y.train.list[[ix]], X.train.list[[ix]]))
 data.test.list = lapply(1:3, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
+data.krr.test.list = lapply(1:3, function(ix) constructData(y = Y.test.list[[ix]], x=X.test.list[[ix]]))
+
 
 # ridge
 ml.ridge.X.class = lapply(1:3, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
@@ -150,7 +153,6 @@ Y_.list = lapply(1:3, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
 Y_.train = do.call(c, Y_.list)
 
 # construct kernel matrix
-
 
 # demeaned kernel matrix for training
 K.mat = matrix(0, nrow = n.train, ncol = n.train)
