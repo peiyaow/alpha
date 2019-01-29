@@ -109,6 +109,7 @@ X2U4.kernel = function(X.list, K = 50, gamma = NULL, plot = T){
     K = K+1
   }
   cut.eigen = sort_eigen.vec[K]
+  #print(K)
   
   return(cut.eigen)
 }
@@ -144,8 +145,9 @@ X2U.kernel.cut = function(X, cut, gamma = NULL){
   kermat = kermat/n
   PCA.res = eigen(kermat)
   eigen_vals = PCA.res$values
-  
+  print(eigen_vals)
   K = n - length(eigen_vals[eigen_vals<cut])
+  print(K)
   if (K == 0){
     F_ = 0
     P = matrix(0, nrow = n, ncol = n)
@@ -260,5 +262,35 @@ cv.regkrr = function(X, Y, gamma = NULL, nfolds = 10, lambda.vec){
   m = regkrr$learn(data.train, best.para[[1]])
   best.lam = best.para[[1]]$lambda
   return(list(best.ml = m, lambda.min = best.lam))
+}
+
+X2U.kernel = function(X, K=50, gamma = NULL, plot = T){
+  n = nrow(X)
+  p = ncol(X)
+  if(is.null(gamma)){
+    gamma = 1/p
+  }
+  rbf = rbfdot(sigma = gamma)
+  kermat = kernelMatrix(kernel = rbf, x = X)
+  I_n = matrix(1/n, nrow = n, ncol = n)
+  kermat = kermat - I_n%*%kermat - kermat%*%I_n + I_n%*%kermat%*%I_n
+  kermat = kermat/n
+  PCA.res = eigen(kermat)
+  eigen_vals = PCA.res$values
+  
+  if (plot){
+    par(mfrow=c(3,1))
+    plot(eigen_vals[1:K])
+    plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+    plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+  }
+  
+  K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+  F_ = PCA.res$vectors[,1:K]*sqrt(n)
+  F1 = PCA.res$vectors[,1]*sqrt(n)
+  F2 = PCA.res$vectors[,2]*sqrt(n)
+  P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  H = diag(n) - P
+  return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1))
 }
 
