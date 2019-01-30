@@ -195,6 +195,13 @@ Yhat.krr.U.test = lapply(label.level, function(ix) predict.krr(ml.krr$best.ml, K
 mse.krr.U.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.krr.U.test[[ix]]-Y.test.list[[ix]])^2))
 mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
+file.name = c("MCIAD_gamma_", as.character(-log10(gamma)),".csv")
+file.name = paste(file.name, collapse ="")
+write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.kridge.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+
+file.name = c("MCIAD_class_gamma_", as.character(-log10(gamma)),".csv")
+file.name = paste(file.name, collapse ="")
+write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.kridge.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 
