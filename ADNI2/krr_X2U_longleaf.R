@@ -14,26 +14,9 @@ library(CVST)
 require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
-load("/nas/longleaf/home/peiyao/alpha/data/ADNI1.RData")
+load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean.RData")
 
-X = X[-c(167,770),]
-label = label[-c(167,770)]
-Y = Y[-c(167,770)]
-
-X = X[-151,]
-label = label[-151]
-Y = Y[-151]
-
-X = X[-c(112,169),]
-label = label[-c(112,169)]
-Y = Y[-c(112,169)]
-
-X = X[-c(70,126),]
-label = label[-c(70,126)]
-Y = Y[-c(70,126)]
-
-# only MCI and AD
-X = X[label!=4, ]
+X = X[label!=4,]
 Y = Y[label!=4]
 label = label[label!=4]
 label = droplevels(label)
@@ -65,6 +48,7 @@ X.test = sweep(sweep(X.test, 2, X.train.mean), 2, X.train.sd, "/")
 
 label.level = levels(label)
 n_label = length(label.level)
+
 # groupwise design matrix
 X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
 X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
@@ -98,8 +82,13 @@ ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]]
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.X.class.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
-
 print(paste0("linear ridge within class performance:", as.character(mse.ridge.X.class)))
+
+# rf
+ml.rf.X.class = lapply(1:n_label, function(ix) randomForest(x = X.train.list[[ix]], y = Y.train.list[[ix]]))
+Yhat.rf.X.class.test = lapply(1:n_label, function(ix) predict(ml.rf.X.class[[ix]], newdata = X.test.list[[ix]]))
+mse.rf.X.class.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.rf.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+mse.rf.X.class = sum(mse.rf.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # kernel ridge
 lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
@@ -109,10 +98,13 @@ Yhat.krr.X.class.test = lapply(1:n_label, function(ix) regkrr$predict(ml.krr.X.c
 mse.krr.X.class.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.krr.X.class.test[[ix]]-Y.test.list[[ix]])^2))
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
-print(paste0("kernel ridge within class performance:", as.character(mse.krr.X.class)))
-
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U(X, plot = T))
+X2U.list = lapply(X.train.list, function(X)  X2U(X, plot = F))
+for (ll in 1:n_label){
+  file.name = paste(c("loading_", as.character(ll),".csv"), collapse = "")
+  write.table(t(apply(X2U.list[[ll]]$L, 2, function(row) sqrt(mean(row^2)))), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+}
+
 H.list = lapply(X2U.list, function(list) list$H)
 
 U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list[[ix]])
@@ -120,8 +112,6 @@ Y_.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
 
 U.train = do.call(rbind, U.list)
 Y_.train = do.call(c, Y_.list)
-# PY.train = do.call(c, PY.list)
-# data.U.train = data.frame(Y = Y_.train, U.train)
 
 # ridge
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, alpha = 0)
@@ -131,25 +121,9 @@ mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 
 print(paste0("linear PCA linear ridge performance:", as.character(mse.ridge.U)))
 
-# kernel ridge
-gamma = gamma
-data.U.train = constructData(U.train, Y_.train)
-krr.U = constructKRRLearner()
-lambda.vec = exp(1)^seq(log(10^-4), log(10^0), length.out = 100)
-params = constructParams(kernel="rbfdot", sigma=gamma, lambda=lambda.vec)
-best.para = CV(data.U.train, krr.U, params, fold = 10, verbose = F)
-m = krr.U$learn(data.U.train, best.para[[1]])
-data.test = constructData(X.test, Y.test)
-Yhat.kridge.U.test = krr.U$predict(m, data.test)
-Yhat.kridge.U.test = lapply(label.level, function(ix) Yhat.kridge.U.test[label.test==ix])
-mse.kridge.U.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.kridge.U.test[[ix]]-Y.test.list[[ix]])^2))
-mse.kridge.U = sum(mse.kridge.U.vec*n.test.vec)/sum(n.test.vec)
-
-print(paste0("linear PCA kernel ridge performance:", as.character(mse.kridge.U)))
-
 # ------------------------------ kernel PCA -----------------------------------------
 gamma = gamma
-X2U.list = lapply(X.train.list, function(X)  X2U.kernel(X, gamma = gamma, plot = T))
+X2U.list = lapply(X.train.list, function(X)  X2U.kernel(X, gamma = gamma, plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
 Y_.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
@@ -199,13 +173,13 @@ Yhat.krr.U.test = lapply(1:n_label, function(ix) Yhat.krr.U.test[(ix.test.vec[ix
 mse.krr.U.vec = sapply(1:n_label, function(ix) Y.train.sd[[ix]]^2*mean((Yhat.krr.U.test[[ix]]-Y.test.list[[ix]])^2))
 mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
-file.name = c("MCIAD_gamma_", as.character(-log10(gamma)),".csv")
+file.name = c("gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.kridge.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.X.class, mse.rf.X.class, mse.krr.X.class, mse.ridge.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
-file.name = c("MCIAD_class_gamma_", as.character(-log10(gamma)),".csv")
+file.name = c("class_gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.kridge.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.X.class.vec, mse.rf.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 

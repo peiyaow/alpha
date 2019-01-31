@@ -18,7 +18,8 @@ X2U = function(X, K=50, plot = T){
   F2 = PCA.res$vectors[,2]*sqrt(n)
   P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
   H = diag(n) - P
-  return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1))
+  L = solve(t(F_)%*%F_)%*%t(F_)%*%X
+  return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L))
 }
 
 
