@@ -11,15 +11,47 @@ X2U = function(X, K=50, plot = T){
     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
   }
-  
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
   F_ = PCA.res$vectors[,1:K]*sqrt(n)
-  F1 = PCA.res$vectors[,1]*sqrt(n)
-  F2 = PCA.res$vectors[,2]*sqrt(n)
+  #F1 = PCA.res$vectors[,1]*sqrt(n)
+  #F2 = PCA.res$vectors[,2]*sqrt(n)
+  F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
+  F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
   P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
   H = diag(n) - P
   L = solve(t(F_)%*%F_)%*%t(F_)%*%X
-  return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L))
+  L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
+  L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
+  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
+  return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
+}
+
+X2U1 = function(X, K=50, plot = F){
+  n = nrow(X)
+  #  p = ncol(X)
+  PCA.res = eigen(X%*%t(X)/n)
+  eigen_vals = PCA.res$values
+  if (plot){
+    par(mfrow=c(3,1))
+    plot(eigen_vals[1:K])
+    plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+    plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+  }
+  K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+  F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
+  F1 = F_[,1]
+  #F1 = PCA.res$vectors[,1]*sqrt(n)
+  #F2 = PCA.res$vectors[,2]*sqrt(n)
+  F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
+  F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
+  P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
+  H = diag(n) - P
+  L = solve(t(F_)%*%F_)%*%t(F_)%*%X
+  L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
+  L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
+  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
+  return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
 
@@ -294,4 +326,50 @@ X2U.kernel = function(X, K=50, gamma = NULL, plot = T){
   H = diag(n) - P
   return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1))
 }
+
+X2U1.kernel = function(X, K=50, gamma = NULL, plot = F){
+  n = nrow(X)
+  p = ncol(X)
+  if(is.null(gamma)){
+    gamma = 1/p
+  }
+  rbf = rbfdot(sigma = gamma)
+  kermat = kernelMatrix(kernel = rbf, x = X)
+  I_n = matrix(1/n, nrow = n, ncol = n)
+  kermat = kermat - I_n%*%kermat - kermat%*%I_n + I_n%*%kermat%*%I_n
+  kermat = kermat/n
+  PCA.res = eigen(kermat)
+  eigen_vals = PCA.res$values
+  
+  if (plot){
+    par(mfrow=c(3,1))
+    plot(eigen_vals[1:K])
+    plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+    plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+  }
+  
+  K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+  # F_ = PCA.res$vectors[,1:K]*sqrt(n)
+  # F1 = PCA.res$vectors[,1]*sqrt(n)
+  # F2 = PCA.res$vectors[,2]*sqrt(n)
+  # P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  # H = diag(n) - P
+  # return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1))
+  
+  F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
+  F1 = F_[,1]
+  #F1 = PCA.res$vectors[,1]*sqrt(n)
+  #F2 = PCA.res$vectors[,2]*sqrt(n)
+  F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
+  F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
+  P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
+  H = diag(n) - P
+  #L = solve(t(F_)%*%F_)%*%t(F_)%*%X
+  #L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
+  #L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
+  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
+  return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2))
+}
+
 
