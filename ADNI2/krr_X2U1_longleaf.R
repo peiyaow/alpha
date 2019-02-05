@@ -175,7 +175,7 @@ K.mat.test = K.mat.test%*%H_diag # n.test by n.train
 
 Yhat.krr.U.test = predict.krr(ml.krr$best.ml, K.mat.test)
 Yhat.krr.U.test = lapply(1:n_label, function(ix) Yhat.krr.U.test[(ix.test.vec[ix]+1):ix.test.vec[ix+1]])
-mse.krr.U.vec = sapply(1:n_label, function(ix) mean((Yhat.krr.U.test[[ix]]+Y.train.mean[[ix]]-Y.test.list[[ix]])^2))
+mse.krr.U.vec = sapply(1:n_label, function(ix) mean((Yhat.krr.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
 mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
 file.name = c("gamma_", as.character(-log10(gamma)),".csv")
