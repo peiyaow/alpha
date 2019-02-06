@@ -77,10 +77,16 @@ data.train.list = lapply(1:n_label, function(ix) data.frame(Y=Y.train.list[[ix]]
 data.test.list = lapply(1:n_label, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
 data.krr.test.list = lapply(1:n_label, function(ix) constructData(y = Y.test.list[[ix]], x=X.test.list[[ix]]))
 
+# ml.ridge.X = cv.glmnet(x=X.train, y=Y.train, alpha = 0)
+# Yhat.ridge.X.test = predict(ml.ridge.X, s = ml.ridge.X$lambda.min, newx = X.test)
+# mse.ridge.X.vec = sapply(label.level, function(l) mean((Yhat.ridge.X.test[label.test==l] - Y.test[label.test==l])^2))
+# mse.ridge.X = mean((Yhat.ridge.X.test - Y.test)^2)
+
 # ridge
 ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+#mae.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(abs(Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 #print(paste0("linear ridge within class performance:", as.character(mse.ridge.X.class)))
 
@@ -93,7 +99,7 @@ mse.krr.X.class.vec = sapply(1:n_label, function(ix) mean((Yhat.krr.X.class.test
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U1(X))
+X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
 # for (ll in 1:n_label){
 #   file.name = paste(c("loading_", as.character(ll),".csv"), collapse = "")
 #   write.table(t(apply(X2U.list[[ll]]$L, 2, function(row) sqrt(mean(row^2)))), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
@@ -123,6 +129,8 @@ Y_.train = do.call(c, Y_.list)
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+#mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+mean(Y.train)-Y.test.list[[ix]])^2))
+#mae.ridge.U.vec = sapply(1:n_label, function(ix) mean(abs(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])))
 mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 
 #print(paste0("linear PCA linear ridge performance:", as.character(mse.ridge.U)))

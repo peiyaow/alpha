@@ -1,21 +1,4 @@
-X1 = X[label == 3, ]
-n = nrow(X1)
-#  p = ncol(X)
-PCA.res = eigen(X1%*%t(X1)/n)
-plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
-
-plot(Y.train.list[[4]])
-
-X2U.list = lapply(X.train.list, function(X)  X2U(X, plot = T))
-F1 = c()
-F2 = c()
-for (l in 1:4){
-  F1 = c(F1, X2U.list[[l]]$F1)
-  F2 = c(F2, X2U.list[[l]]$F2)
-  plot(X2U.list[[l]]$F1,  X2U.list[[l]]$F2)
-}
-par(mfrow = c(1,1))
-plot(F1, F2)
+library(ggplot2)
 
 L = NULL
 L_res = NULL
@@ -31,9 +14,8 @@ for (l in 1:4){
 
 data = data.frame(L1 = L[1,], L2 = L[2,], Lr1 = L_res[1,], Lr2 = L_res[2,], stage = c(rep("NC", 93), rep("SMC", 93), rep("eMCI", 93), rep("lMCI", 93)))
 rownames(data) = NULL
-library(ggplot2)
-ggplot(data, aes(x=L1, y=L2, color = stage)) + geom_point()
-ggplot(data, aes(x=Lr1, y=Lr2, color = stage)) + geom_point()
+ggplot(data, aes(x=L1, y=L2, color = stage)) + geom_point() + ggtitle("Significant Factors")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(data, aes(x=Lr1, y=Lr2, color = stage)) + geom_point() + ggtitle("Insignificant Factors")+ theme(plot.title = element_text(hjust = 0.5))
 
 PY.list = list()
 HY.list = list()
@@ -42,7 +24,13 @@ for (l in 1:4){
   HY.list[[l]] = X2U1(X.train.list[[l]])$H%*%Y.train.list[[l]]
 }
 
-plot(do.call(c, PY.list))
-plot(do.call(c, HY.list))
+
+dat2 = data.frame(PY = do.call(c, PY.list), HY = do.call(c, HY.list), stage = c(rep("NC", n.train.vec[1]), rep("SMC", n.train.vec[2]), rep("eMCI", n.train.vec[3]), rep("lMCI", n.train.vec[4])))
+index = 1:n.train
+ggplot(dat2, aes(x= index, y=PY, color = stage)) + geom_point()+ggtitle("Plot of PY")+ theme(plot.title = element_text(hjust = 0.5))
+ggplot(dat2, aes(x= index, y=HY, color = stage)) + geom_point()+ggtitle("Plot of HY")+ theme(plot.title = element_text(hjust = 0.5))
+
+
+X2U1(as.matrix(X.test.list[[1]][14,] - X.train.mean[[1]]))$L2
 
 
