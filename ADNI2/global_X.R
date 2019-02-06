@@ -89,7 +89,7 @@ gamma = 0.0001
 ml.krr.X = cv.regkrr(X.train, Y.train, gamma = gamma, lambda.vec = lambda.vec)
 Yhat.krr.X.test = regkrr$predict(ml.krr.X$best.ml, constructData(y=Y.test, x=X.test))
 mse.krr.X.vec = sapply(label.level, function(l) mean((Yhat.krr.X.test[label.test==l]-Y.test[label.test==l])^2))
-mse.krr.X = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
+mse.krr.X = sum(mse.krr.X.vec*n.test.vec)/sum(n.test.vec)
 
 
 file.name = c("gamma_", as.character(-log10(gamma)),".csv")
