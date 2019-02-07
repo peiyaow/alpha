@@ -31,6 +31,16 @@ ggplot(dat2, aes(x= index, y=PY, color = stage)) + geom_point()+ggtitle("Plot of
 ggplot(dat2, aes(x= index, y=HY, color = stage)) + geom_point()+ggtitle("Plot of HY")+ theme(plot.title = element_text(hjust = 0.5))
 
 
-X2U1(as.matrix(X.test.list[[1]][14,] - X.train.mean[[1]]))$L2
+L.test = X2U1(X.test)$L2
+
+data.test = data.frame(L1 = L.test[1,], L2 = L.test[2,])
+ggplot(data.test, aes(x=L1, y=L2)) + geom_point() 
+
+
+
+
+
+
+
 
 
