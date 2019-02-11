@@ -16,15 +16,17 @@ require(methods)
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean.RData")
 
-X = X[label!=4,]
-Y = Y[label!=4]
-label = label[label!=4]
-label = droplevels(label)
+# X = X[label!=4,]
+# Y = Y[label!=4]
+# label = label[label!=4]
+# label = droplevels(label)
 
-X = X[label!=3,]
-Y = Y[label!=3]
-label = label[label!=3]
-label = droplevels(label)
+# X = X[label!=3,]
+# Y = Y[label!=3]
+# label = label[label!=3]
+# label = droplevels(label)
+
+Y = log(Y+1)
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -85,7 +87,7 @@ data.krr.test.list = lapply(1:n_label, function(ix) constructData(y = Y.test.lis
 # ridge
 ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.X.class.test[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # kernel ridge
@@ -93,7 +95,7 @@ lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
 gamma = gamma
 ml.krr.X.class = lapply(1:n_label, function(ix) cv.regkrr(X.train.list[[ix]], Y.train.list[[ix]], gamma = gamma, lambda.vec = lambda.vec))
 Yhat.krr.X.class.test = lapply(1:n_label, function(ix) regkrr$predict(ml.krr.X.class[[ix]]$best.ml, data.krr.test.list[[ix]]))
-mse.krr.X.class.vec = sapply(1:n_label, function(ix) mean((Yhat.krr.X.class.test[[ix]]-Y.test.list[[ix]])^2))
+mse.krr.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.X.class.test[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
@@ -122,13 +124,14 @@ sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix
 w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-mse.wridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+mse.wridge.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.wridge.U = sum(mse.wridge.U.vec*n.test.vec)/sum(n.test.vec)
 
 # ridge
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+#mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------ kernel PCA -----------------------------------------
@@ -179,7 +182,7 @@ K.mat.test = K.mat.test%*%H_diag # n.test by n.train
 
 Yhat.krr.U.test = predict.krr(ml.krr$best.ml, K.mat.test)
 Yhat.krr.U.test = lapply(1:n_label, function(ix) Yhat.krr.U.test[(ix.test.vec[ix]+1):ix.test.vec[ix+1]])
-mse.krr.U.vec = sapply(1:n_label, function(ix) mean((Yhat.krr.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+mse.krr.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
 file.name = c("gamma_", as.character(-log10(gamma)),".csv")
