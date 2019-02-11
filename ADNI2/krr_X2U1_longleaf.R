@@ -21,6 +21,11 @@ Y = Y[label!=4]
 label = label[label!=4]
 label = droplevels(label)
 
+X = X[label!=3,]
+Y = Y[label!=3]
+label = label[label!=3]
+label = droplevels(label)
+
 n = dim(X)[1]
 p = dim(X)[2]
 
@@ -104,21 +109,27 @@ Y_mean.list = lapply(1:n_label, function(ix) (P1.list[[ix]]%*%Y.train.list[[ix]]
 U.train = do.call(rbind, U.list)
 Y_.train = do.call(c, Y_.list)
 
+data.U.train = data.frame(Y = Y_.train, U.train)
+
+# lm and wls ridge
+ml.lm.U = lm(Y~., data = data.U.train)  
+Yhat.lm.U.test = lapply(1:n_label, function(ix) predict(ml.lm.U, newdata = data.test.list[[ix]][, -1]))
+mse.lm.U.vec = sapply(1:n_label, function(ix) mean((Yhat.lm.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U = sum(mse.lm.U.vec*n.test.vec)/sum(n.test.vec)
+
+ix.vec = c(0,cumsum(n.train.vec))
+sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
+Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
+mse.wridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+mse.wridge.U = sum(mse.wridge.U.vec*n.test.vec)/sum(n.test.vec)
+
 # ridge
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
 mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
-
-
-ml.ridge.U.class = lapply(1:n_label, function(l) cv.glmnet(y = Y_.list[[l]], x=U.list[[l]], alpha = 0))
-resid.list = lapply(1:n_label, function(l) Y_.list[[l]]-predict(ml.ridge.U.class[[l]], s = ml.ridge.U.class[[l]]$lambda.min, newx = U.list[[l]]))
-sigma.list = lapply(1:n_label, function(l) sum(resid.list[[l]]^2)/length(resid.list[[l]]))
-w = do.call(c, lapply(1:n_label, function(l) rep(1/sigma.list[[l]], n.train.vec[l])))
-ml.ridge.U.class = cv.glmnet(x=U.train, y=Y_.train, weights =  w, alpha = 0)
-Yhat.ridge.U.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.U.class, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.U.class.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.class.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
-mse.ridge.U.class = sum(mse.ridge.U.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------ kernel PCA -----------------------------------------
 gamma = gamma
@@ -173,11 +184,11 @@ mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
 file.name = c("gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.U.class, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.wridge.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 file.name = c("class_gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.U.class.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.wridge.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 

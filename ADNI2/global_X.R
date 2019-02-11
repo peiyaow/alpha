@@ -62,15 +62,20 @@ n.test = sum(n.test.vec)
 # # standardize Y
 # Y.train.mean = lapply(Y.train.list, mean)
 # Y.train.sd = lapply(Y.train.list, sd)
-# 
+# # 
 # # standardize Y (subtract mean and divide sd)
-# Y.train.list = lapply(1:n_label, function(ix) (Y.train.list[[ix]] - Y.train.mean[[ix]])/Y.train.sd[[ix]])
-# Y.test.list = lapply(1:n_label, function(ix) (Y.test.list[[ix]] - Y.train.mean[[ix]])/Y.train.sd[[ix]])
-
-# standardize X (subtract mean)
-X.train.mean = lapply(X.train.list, colMeans)
-X.train.list = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
-X.test.list = lapply(1:n_label, function(ix) sweep(X.test.list[[ix]], 2, X.train.mean[[ix]]))
+# Y.train.list = lapply(1:n_label, function(ix) (Y.train.list[[ix]] - Y.train.mean[[ix]]))
+# Y.test.list = lapply(1:n_label, function(ix) (Y.test.list[[ix]] - Y.train.mean[[ix]]))
+# 
+# # standardize X (subtract mean)
+# X.train.mean = lapply(X.train.list, colMeans)
+# X.train.list = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
+# X.test.list = lapply(1:n_label, function(ix) sweep(X.test.list[[ix]], 2, X.train.mean[[ix]]))
+# 
+# X.train = do.call(rbind, X.train.list)
+# X.test = do.call(rbind, X.test.list)
+# Y.train = do.call(c, Y.train.list)
+# Y.test = do.call(c, Y.test.list)
 
 # data.frame format
 data.train.list = lapply(1:n_label, function(ix) data.frame(Y=Y.train.list[[ix]], X.train.list[[ix]]))
@@ -82,6 +87,15 @@ ml.ridge.X = cv.glmnet(x=X.train, y=Y.train, alpha = 0)
 Yhat.ridge.X.test = predict(ml.ridge.X, s = ml.ridge.X$lambda.min, newx = X.test)
 mse.ridge.X.vec = sapply(label.level, function(l) mean((Yhat.ridge.X.test[label.test==l] - Y.test[label.test==l])^2))
 mse.ridge.X = mean((Yhat.ridge.X.test - Y.test)^2)
+
+
+# plot(Yhat.ridge.X.test - Y.test)
+# 
+# Yhat.ridge.X.train = predict(ml.ridge.X, s = ml.ridge.X$lambda.min, newx = X.train)
+# plot(Yhat.ridge.X.train - Y.train)
+# plot(do.call(c,lapply(label.level, function(l) (Y.train-Yhat.ridge.X.train)[label.train==l])))
+
+
 
 # kernel ridge
 lambda.vec = exp(1)^seq(log(10^-4), log(10^1), length.out = 100)
