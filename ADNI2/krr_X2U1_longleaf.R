@@ -208,7 +208,7 @@ write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.sx.U,
 
 file.name = c("class_gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.wridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 
