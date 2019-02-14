@@ -84,6 +84,19 @@ data.train.list = lapply(1:n_label, function(ix) data.frame(Y=Y.train.list[[ix]]
 data.test.list = lapply(1:n_label, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
 data.krr.test.list = lapply(1:n_label, function(ix) constructData(y = Y.test.list[[ix]], x=X.test.list[[ix]]))
 
+Y.train.mean = lapply(Y.train.list, mean)
+Y.train.WLS = do.call(c, lapply(1:n_label, function(l) Y.train.list[[l]] - Y.train.mean[[l]]))
+X.train.WLS = do.call(rbind, X.train.list)
+data.train.WLS = data.frame(Y = Y.train.WLS, X.train.WLS)
+ml.lm.WLS = lm(Y~., data = data.train.WLS)
+ix.vec = c(0,cumsum(n.train.vec))
+sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.WLS$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+ml.ridge.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0, weights = w)
+Yhat.ridge.WLS.test = lapply(1:n_label, function(ix) predict(ml.ridge.WLS, s=ml.ridge.WLS$lambda.min, newx = X.test.list[[ix]]))
+mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
+
 # ridge
 ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
@@ -204,11 +217,11 @@ mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
 file.name = c("gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, mse.ridge.wHi.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.WLS, mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, mse.ridge.wHi.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 file.name = c("class_gamma_", as.character(-log10(gamma)),".csv")
 file.name = paste(file.name, collapse ="")
-write.table(t(c(mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+write.table(t(c(mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 
