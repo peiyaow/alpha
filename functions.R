@@ -147,22 +147,41 @@ X2U4.kernel = function(X.list, K = 50, gamma = NULL, plot = T){
   return(cut.eigen)
 }
 
+# X2U.cut = function(X, cut){
+#   n = nrow(X)
+#   #  p = ncol(X)
+#   PCA.res = eigen(X%*%t(X)/n)
+#   eigen_vals = PCA.res$values
+#   K = n - length(eigen_vals[eigen_vals<cut])
+#   if (K == 0){
+#     F_ = 0
+#     P = matrix(0, nrow = n, ncol = n)
+#     H = diag(n) - P
+#   }else{
+#     F_ = PCA.res$vectors[,1:K]*sqrt(n)
+#     P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+#     H = diag(n) - P
+#   }
+#   return(list(H = H, P = P, K = K, F_ = F_))
+# }
+
 X2U.cut = function(X, cut){
   n = nrow(X)
-  #  p = ncol(X)
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
   K = n - length(eigen_vals[eigen_vals<cut])
   if (K == 0){
-    F_ = 0
-    P = matrix(0, nrow = n, ncol = n)
+    F_ = as.matrix(rep(1, n))
+    P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
     H = diag(n) - P
   }else{
-    F_ = PCA.res$vectors[,1:K]*sqrt(n)
+    F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
     P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
     H = diag(n) - P
   }
-  return(list(H = H, P = P, K = K, F_ = F_))
+  F1 = F_[,1]
+  P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
+  return(list(H = H, P = P, K = K, F_ = F_, P1 = P1))
 }
 
 X2U.kernel.cut = function(X, cut, gamma = NULL){

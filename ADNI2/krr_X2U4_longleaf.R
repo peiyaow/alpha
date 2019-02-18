@@ -16,11 +16,6 @@ require(methods)
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean.RData")
 
-X = X[label!=3,]
-Y = Y[label!=3]
-label = label[label!=3]
-label = droplevels(label)
-
 X = X[label!=4,]
 Y = Y[label!=4]
 label = label[label!=4]
@@ -101,7 +96,6 @@ ml.ridge.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0, weights = w)
 Yhat.ridge.WLS.test = lapply(1:n_label, function(ix) predict(ml.ridge.WLS, s=ml.ridge.WLS$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-exp(Y.test.list[[ix]]))^2))
 # mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
-
 mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # ridge
@@ -120,7 +114,10 @@ mse.krr.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.X.class.
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = F))
+# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
+
+mycut = X2U4(X.train.list, plot = F)
+X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
