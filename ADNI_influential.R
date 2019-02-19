@@ -38,9 +38,9 @@ res2 = plotPC(X2)
 ix2.remove = ix2[res2$F2[,1]> 2]
 
 ix.remove = c(ix1.remove, ix2.remove)
-X = X[-ix1.remove, ]
-Y = Y[-ix1.remove]
-label = label[-ix1.remove]
+X = X[-ix.remove, ]
+Y = Y[-ix.remove]
+label = label[-ix.remove]
 
 summary(Y1)
 summary(Y2)
@@ -49,6 +49,19 @@ plot(Y2)
 plot(Y~label)
 
 sum(Y2[Y2!=0])
+
+n = nrow(X)
+ix = 1:n
+
+ix1 = ix[label==1]
+X1 = X[label==1,]
+res1 = plotPC(X1)
+ix1.remove = ix1[res1$F2[,1]< -2.2]
+
+X2 = X[label==2,]
+ix2 = ix[label==2]
+res2 = plotPC(X2)
+ix2.remove = ix2[res2$F2[,1]> 2]
 
 save(X, Y, label, file = "ADNI.RData")
 

@@ -26,7 +26,7 @@ load("/nas/longleaf/home/peiyao/alpha/data/ADNI.RData")
 # label = label[label!=3]
 # label = droplevels(label)
 
-Y = log(Y+1)
+# Y = log(Y+1)
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -94,15 +94,15 @@ sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.WLS$residuals[(ix.vec[ix]+1):
 w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
 ml.ridge.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0, weights = w)
 Yhat.ridge.WLS.test = lapply(1:n_label, function(ix) predict(ml.ridge.WLS, s=ml.ridge.WLS$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-exp(Y.test.list[[ix]]))^2))
-# mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
+# mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
 mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # ridge
 ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
-#mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class.test[[ix]])-(Y.test.list[[ix]]))^2))
-mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.X.class.test[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class.test[[ix]])-(Y.test.list[[ix]]))^2))
+#mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.X.class.test[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # # kernel ridge
@@ -114,9 +114,9 @@ mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 # mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = F))
-mycut = X2U4(X.train.list, plot = F)
-X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
+X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = F))
+# mycut = X2U4(X.train.list, plot = F)
+# X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
@@ -139,8 +139,8 @@ sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train
 w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-# mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
-mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
+# mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.sx.U = sum(mse.ridge.sx.U.vec*n.test.vec)/sum(n.test.vec)
 
 # weight computed from su
@@ -149,15 +149,15 @@ sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix
 w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-# mse.ridge.su.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
-mse.ridge.su.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.su.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
+# mse.ridge.su.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.su.U = sum(mse.ridge.su.U.vec*n.test.vec)/sum(n.test.vec)
 
 # regular ridge no weight
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-#mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
-mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
+mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]]-Y.test.list[[ix]])^2))
+# mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 
 # # weight computed from diag(H) individual
@@ -219,7 +219,7 @@ mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 # mse.krr.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 # mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
-# ----- before ----- #
+# ----- before ----- have kernel results #
 # file.name = c("gamma_", as.character(-log10(gamma)),".csv")
 # file.name = paste(file.name, collapse ="")
 # write.table(t(c(mse.ridge.WLS, mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, mse.ridge.wHi.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
@@ -228,7 +228,7 @@ mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 # file.name = paste(file.name, collapse ="")
 # write.table(t(c(mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
-# ----- after ----- #
+# ----- after ----- no kernel results #
 file.name = c("result_overall.csv")
 write.table(t(c(mse.ridge.WLS, mse.ridge.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 

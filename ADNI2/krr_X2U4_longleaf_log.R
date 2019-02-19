@@ -219,7 +219,7 @@ mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 # mse.krr.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 # mse.krr.U = sum(mse.krr.U.vec*n.test.vec)/sum(n.test.vec)
 
-# ----- before ----- #
+# ----- before ----- have kernel results #
 # file.name = c("gamma_", as.character(-log10(gamma)),".csv")
 # file.name = paste(file.name, collapse ="")
 # write.table(t(c(mse.ridge.WLS, mse.ridge.X.class, mse.krr.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, mse.ridge.wHi.U, mse.krr.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
@@ -228,7 +228,7 @@ mse.ridge.U = sum(mse.ridge.U.vec*n.test.vec)/sum(n.test.vec)
 # file.name = paste(file.name, collapse ="")
 # write.table(t(c(mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.krr.X.class.vec, mse.ridge.U.vec, mse.ridge.sx.U.vec, mse.ridge.su.U.vec, mse.ridge.wHi.U.vec, mse.krr.U.vec, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
-# ----- after ----- #
+# ----- after ----- no kernel results #
 file.name = c("result_overall.csv")
 write.table(t(c(mse.ridge.WLS, mse.ridge.X.class, mse.ridge.U, mse.ridge.sx.U, mse.ridge.su.U, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 

@@ -140,7 +140,7 @@ Yhat.lm.U.train = lapply(1:n_label, function(ix) predict(ml.lm.U, newdata = data
 
 # weight computed from sx
 sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train[[l]])^2))
-w = do.call(c, sapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
+w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
 # mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
