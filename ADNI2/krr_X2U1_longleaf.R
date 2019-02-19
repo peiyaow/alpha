@@ -14,12 +14,12 @@ library(CVST)
 require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
-load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean.RData")
+load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean2.RData")
 
-X = X[label!=3,]
-Y = Y[label!=3]
-label = label[label!=3]
-label = droplevels(label)
+# X = X[label!=3,]
+# Y = Y[label!=3]
+# label = label[label!=3]
+# label = droplevels(label)
 
 X = X[label!=4,]
 Y = Y[label!=4]
