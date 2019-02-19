@@ -14,12 +14,12 @@ library(CVST)
 require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
-load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean2.RData")
+load("/nas/longleaf/home/peiyao/alpha/data/ADNI.RData")
 
-X = X[label!=4,]
-Y = Y[label!=4]
-label = label[label!=4]
-label = droplevels(label)
+# X = X[label!=4,]
+# Y = Y[label!=4]
+# label = label[label!=4]
+# label = droplevels(label)
 
 # X = X[label!=3,]
 # Y = Y[label!=3]
@@ -114,7 +114,7 @@ mse.krr.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.krr.X.class.
 mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
+# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = F))
 
 mycut = X2U4(X.train.list, plot = F)
 X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))

@@ -112,6 +112,8 @@ X2U4 = function(X.list, K = 50, plot = T){
 }
 
 
+
+
 X2U4.kernel = function(X.list, K = 50, gamma = NULL, plot = T){
   eigen.vec = c()
   for (X in X.list){
