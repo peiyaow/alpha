@@ -16,17 +16,32 @@ require(methods)
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI.RData")
 
-# X = X[label!=4,]
-# Y = Y[label!=4]
-# label = label[label!=4]
-# label = droplevels(label)
+X = X[label!=4,]
+Y = Y[label!=4]
+label = label[label!=4]
+label = droplevels(label)
 
-# X = X[label!=3,]
-# Y = Y[label!=3]
-# label = label[label!=3]
-# label = droplevels(label)
+X = X[label!=3,]
+Y = Y[label!=3]
+label = label[label!=3]
+label = droplevels(label)
+
+X = X[label!=2,]
+Y = Y[label!=2]
+label = label[label!=2]
+label = droplevels(label)
+
 
 # Y = log(Y+1)
+Y = exp(Y)-1
+boxplot(Y~label)
+hist(Y[label==2])
+sort(Y)
+
+X = X[Y!=0,]
+label = label[Y!=0]
+Y = Y[Y!=0]
+
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -114,8 +129,8 @@ mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 # mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = F))
-mycut = X2U4(X.train.list, plot = F)
+# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
+mycut = X2U4(X.train.list, plot = T)
 X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
@@ -143,6 +158,7 @@ mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix
 # mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.sx.U = sum(mse.ridge.sx.U.vec*n.test.vec)/sum(n.test.vec)
 
+cbind(mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.ridge.sx.U.vec)
 # weight computed from su
 ix.vec = c(0,cumsum(n.train.vec))
 sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])

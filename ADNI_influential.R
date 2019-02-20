@@ -46,9 +46,10 @@ summary(Y1)
 summary(Y2)
 summary(label)
 plot(Y2)
+plot(log(Y+1)~label)
 plot(Y~label)
 
-sum(Y2[Y2!=0])
+
 
 n = nrow(X)
 ix = 1:n
@@ -56,14 +57,49 @@ ix = 1:n
 ix1 = ix[label==1]
 X1 = X[label==1,]
 res1 = plotPC(X1)
-ix1.remove = ix1[res1$F2[,1]< -2.2]
 
 X2 = X[label==2,]
 ix2 = ix[label==2]
 res2 = plotPC(X2)
-ix2.remove = ix2[res2$F2[,1]> 2]
+ix2.remove = ix2[res2$F2[,2]> 3]
 
-save(X, Y, label, file = "ADNI.RData")
+X = X[-ix2.remove, ]
+Y = Y[-ix2.remove]
+label = label[-ix2.remove]
+
+
+n = nrow(X)
+ix = 1:n
+
+ix1 = ix[label==1]
+X1 = X[label==1,]
+res1 = plotPC(X1)
+
+X2 = X[label==2,]
+ix2 = ix[label==2]
+res2 = plotPC(X2)
+plot(res2$F_[,2],res2$F_[,3])
+ix2.remove = ix2[abs(res2$F_[,3]) > 3]
+
+X = X[-ix2.remove, ]
+Y = Y[-ix2.remove]
+label = label[-ix2.remove]
+
+
+n = nrow(X)
+ix = 1:n
+
+ix1 = ix[label==1]
+X1 = X[label==1,]
+res1 = plotPC(X1)
+
+X2 = X[label==2,]
+ix2 = ix[label==2]
+res2 = plotPC(X2)
+plot(res2$F_[,2],res2$F_[,3])
+ix2.remove = c(ix2[abs(res2$F_[,3]) > 3], ix2[res2$F_[,2] > 3])
+
+save(X, Y, label, file = "ADNI_clean.RData")
 
 
 
