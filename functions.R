@@ -393,4 +393,32 @@ X2U1.kernel = function(X, K=50, gamma = NULL, plot = F){
   return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2))
 }
 
+cv.glmnet_ = function(X, Y, U, Y_, label, w, alpha = 0, lambda.vec, nfolds){
+  flds = createFolds(label, k = nfolds, list = TRUE, returnTrain = FALSE)
+  llam = length(lambda.vec)
+  
+  mse.list = list()
+  for (k in 1:nfolds){
+    X.train = X[unlist(flds[-k]),]
+    X.val = X[unlist(flds[k]), ] 
+    Y.train = Y[unlist(flds[-k])]
+    Y.val = Y[unlist(flds[k])]
+    U.train = U[unlist(flds[-k]),]
+    U.val = U[unlist(flds[k]), ] 
+    Y_.train = Y_[unlist(flds[-k])]
+    Y_.val = Y_[unlist(flds[k])]
+    w.train = w[unlist(flds[-k])]
+    ml.ridge = glmnet(x = U.train, y = Y_.train, weights = w.train, lambda = lambda.vec, alpha = alpha)
+    Yhat.mtx = predict(ml.ridge, newx = X.val) # n.train by llam
+    mse.list[[k]] = apply(sweep(Yhat.mtx, 1, Y.val)^2, 2, mean)
+  }
+  mse.vec = apply(do.call(rbind, mse.list), 2, mean)
+  lambda.min = lambda.vec[which.min(mse.vec)]
+  best.ml = glmnet(x = U, y = Y_, weights = w, lambda = lambda.min, alpha = alpha)
+  return(list(best.ml = best.ml, mse.vec = mse.vec, lambda.min = lambda.min))
+}
+
+
+
+
 
