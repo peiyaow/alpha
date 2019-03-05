@@ -14,12 +14,12 @@ library(CVST)
 require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
-load("/nas/longleaf/home/peiyao/alpha/data/ADNI.RData")
+load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean3.RData")
 
-X = X[label!=4,]
-Y = Y[label!=4]
-label = label[label!=4]
-label = droplevels(label)
+# X = X[label!=4,]
+# Y = Y[label!=4]
+# label = label[label!=4]
+# label = droplevels(label)
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -111,54 +111,7 @@ Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.clas
 mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class.test[[ix]])-(Y.test.list[[ix]]))^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
-
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = T))
-
-H.list = lapply(X2U.list, function(list) list$H)
-P1.list = lapply(X2U.list, function(list) list$P1)
-K.list = lapply(X2U.list, function(list) list$K)
-P.list = lapply(X2U.list, function(list) list$P)
-U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list[[ix]])
-F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
-HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
-PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
-Y_mean.train.list = lapply(1:n_label, function(ix) (P1.list[[ix]]%*%Y.train.list[[ix]])[1])
-
-U.train = do.call(rbind, U.train.list)
-HY.train = do.call(c, HY.train.list)
-data.U.train = data.frame(Y = HY.train, U.train)
-
-# lm and wls ridge
-ml.lm.U = lm(Y~., data = data.U.train)  
-Yhat.lm.U.train = lapply(1:n_label, function(ix) predict(ml.lm.U, newdata = data.train.list[[ix]][, -1])+Y_mean.train.list[[ix]])
-Yhat.lm.U.test = lapply(1:n_label, function(ix) predict(ml.lm.U, newdata = data.test.list[[ix]][, -1])+Y_mean.train.list[[ix]])
-mse.lm.U.vec = sapply(1:n_label, function(ix) mean((Yhat.lm.U.test[[ix]]-(Y.test.list[[ix]]))^2))
-mse.lm.U = sum(mse.lm.U.vec*n.test.vec)/sum(n.test.vec)
-
-# weight computed from sx, ridge
-sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train[[l]])^2))
-w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
-ml.ridge.U = cv.glmnet(x=U.train, y=HY.train, weights = w, alpha = 0)
-Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.train.list[[ix]])-(Y.test.list[[ix]]))^2))
-mse.ridge.sx.U = sum(mse.ridge.sx.U.vec*n.test.vec)/sum(n.test.vec)
-
-# weight computed from su, ridge
-ix.vec = c(0,cumsum(n.train.vec))
-sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
-w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
-ml.ridge.U = cv.glmnet(x=U.train, y=HY.train, weights = w, alpha = 0)
-Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
-mse.ridge.su.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.train.list[[ix]])-(Y.test.list[[ix]]))^2))
-mse.ridge.su.U = sum(mse.ridge.su.U.vec*n.test.vec)/sum(n.test.vec)
-
-# WLS U lm
-ml.lm.U = lm(Y~., data = data.U.train, weights = w)
-Yhat.lm.sx.U.test = lapply(1:n_label, function(ix) predict(ml.lm.U, new = data.frame(X.test.list[[ix]])))
-mse.lm.su.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.lm.sx.U.test[[ix]]+Y_mean.train.list[[ix]])-(Y.test.list[[ix]]))^2))
-mse.lm.su.U = sum(mse.lm.su.U.vec*n.test.vec)/sum(n.test.vec)
-
 # new method1
 X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
 X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
@@ -168,7 +121,7 @@ Y.combine.list = lapply(1:n_label, function(ix) c(Y.train.list[[ix]], Y.test.lis
 X.combine.mean = lapply(X.combine.list, colMeans)
 X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
 
-X2U.list = lapply(X.combine.list, function(X)  X2U2(X, plot = T))
+X2U.list = lapply(X.combine.list, function(X)  X2U2(X, plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
@@ -209,7 +162,8 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.U$coefficients)
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.vec = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U1 = sum(mse.lm.U.vec1*n.test.vec)/sum(n.test.vec)
 
 # ridge.U
 ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
@@ -220,8 +174,8 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.ridge.U.vec = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
-
+mse.ridge.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U1 = sum(mse.ridge.U.vec1*n.test.vec)/sum(n.test.vec)
 # --------------------------------------- new w lm and wls ridge -----------------------------------------------------
 ml.lm.U = lm(Y~., data = data.U.train)  
 HYhat.lm.U.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
@@ -245,7 +199,8 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.U$coefficients)
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U2 = sum(mse.lm.U.vec2*n.test.vec)/sum(n.test.vec)
 
 # ridge.U
 ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
@@ -256,23 +211,27 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.ridge.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U2 = sum(mse.ridge.U.vec2*n.test.vec)/sum(n.test.vec)
 
-# single
+# method1_single
 result.method1.single.list = lapply(1:n_label, function(ix) apply(X.test.list[[ix]], 1, function(row) predict_method1_single(X.train.list, Y.train.list, row, ix)$Yhat))
 
 Yhat.test.list = lapply(1:n_label, function(ix) result.method1.single.list[[ix]][2,])
-mse.ridge.single.U.vec = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.single.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.single.U1 = sum(mse.ridge.single.U.vec1*n.test.vec)/sum(n.test.vec)
 
 Yhat.test.list = lapply(1:n_label, function(ix) result.method1.single.list[[ix]][1,])
-mse.single.U.vec = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.single.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.single.U1 = sum(mse.lm.single.U.vec1*n.test.vec)/sum(n.test.vec)
 
 Yhat.test.list = lapply(1:n_label, function(ix) result.method1.single.list[[ix]][4,])
-mse.ridge.single.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
-
+mse.ridge.single.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.single.U2 = sum(mse.ridge.single.U.vec2*n.test.vec)/sum(n.test.vec)
+  
 Yhat.test.list = lapply(1:n_label, function(ix) result.method1.single.list[[ix]][3,])
-mse.single.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
-
+mse.lm.single.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.single.U2 = sum(mse.lm.single.U.vec2*n.test.vec)/sum(n.test.vec)
 
 
 

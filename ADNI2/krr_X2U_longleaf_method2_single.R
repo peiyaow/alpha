@@ -14,12 +14,12 @@ library(CVST)
 require(methods)
 
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
-load("/nas/longleaf/home/peiyao/alpha/data/ADNI.RData")
+load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean3.RData")
 
-X = X[label!=4,]
-Y = Y[label!=4]
-label = label[label!=4]
-label = droplevels(label)
+# X = X[label!=4,]
+# Y = Y[label!=4]
+# label = label[label!=4]
+# label = droplevels(label)
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -110,8 +110,9 @@ ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]]
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class.test[[ix]])-(Y.test.list[[ix]]))^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
+
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = T))
+X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
@@ -146,7 +147,8 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.U$coefficients)
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U1 = sum(mse.lm.U.vec1*n.test.vec)/sum(n.test.vec)
 
 # weighted ridge: weights from OLS.U
 ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
@@ -158,14 +160,14 @@ PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.lis
 HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
 mse.ridge.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U1 = sum(mse.ridge.U.vec1*n.test.vec)/sum(n.test.vec)
 
-
-PYhat.WLSbeta.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%X2U.list[[ix]]$L%*%ml.lm.WLS$coefficients[-1]+Y_mean.train.list[[ix]])
-HYhat.WLSbeta.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.WLS$coefficients)
-
-diff.PYhat.vec = sapply(1:n_label, function(ix) mean((PYhat.WLSbeta.test.list[[ix]] - PYhat.test.list[[ix]])^2))
-diff.PYhat.ridge.vec = sapply(1:n_label, function(ix) mean((PYhat.WLSbeta.test.list[[ix]] - PYhat.ridge.test.list[[ix]])^2))
-diff.HYhat.vec = sapply(1:n_label, function(ix) mean((HYhat.WLSbeta.test.list[[ix]] - HYhat.test.list[[ix]])^2))
+# PYhat.WLSbeta.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%X2U.list[[ix]]$L%*%ml.lm.WLS$coefficients[-1]+Y_mean.train.list[[ix]])
+# HYhat.WLSbeta.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.WLS$coefficients)
+# 
+# diff.PYhat.vec = sapply(1:n_label, function(ix) mean((PYhat.WLSbeta.test.list[[ix]] - PYhat.test.list[[ix]])^2))
+# diff.PYhat.ridge.vec = sapply(1:n_label, function(ix) mean((PYhat.WLSbeta.test.list[[ix]] - PYhat.ridge.test.list[[ix]])^2))
+# diff.HYhat.vec = sapply(1:n_label, function(ix) mean((HYhat.WLSbeta.test.list[[ix]] - HYhat.test.list[[ix]])^2))
 
 # --------------------------------------- new w lm and wls ridge -----------------------------------------------------
 # compute weights from OLS.U and OLS.F
@@ -188,7 +190,8 @@ ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l
 PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
 HYhat.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.U$coefficients)
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
-mse.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U2 = sum(mse.lm.U.vec2*n.test.vec)/sum(n.test.vec)
 
 # weighted ridge: weights from OLS.U and OLS.F
 ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
@@ -200,7 +203,15 @@ PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.lis
 HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
 Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
 mse.ridge.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U2 = sum(mse.ridge.U.vec2*n.test.vec)/sum(n.test.vec)
+# -------------------------------------------------------------------------------------------------------------------------------------
 
+file.name = c("result_overall.csv")
+write.table(t(c(mse.lm.global, mse.ridge.global, mse.lm.WLS, mse.ridge.WLS, mse.ridge.X.class, mse.lm.U1, mse.ridge.U1, mse.lm.U2, mse.ridge.U2,myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+
+file.name = c("result_class.csv")
+write.table(t(c(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+rbind(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2, myseed)
 
 
 

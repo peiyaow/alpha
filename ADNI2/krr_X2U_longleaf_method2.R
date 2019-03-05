@@ -112,7 +112,7 @@ mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = T))
+X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
@@ -136,7 +136,7 @@ X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test
 X.combine.mean = lapply(X.combine.list, colMeans)
 X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
 
-X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = T))
+X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = F))
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
 K.list = lapply(X2U.list, function(list) list$K)
