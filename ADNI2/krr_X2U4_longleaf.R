@@ -21,18 +21,6 @@ Y = Y[label!=4]
 label = label[label!=4]
 label = droplevels(label)
 
-# X = X[label!=1,]
-# Y = Y[label!=1]
-# label = label[label!=1]
-# label = droplevels(label)
-
-# X = X[label!=3,]
-# Y = Y[label!=3]
-# label = label[label!=3]
-# label = droplevels(label)
-
-# Y = log(Y+1)
-
 n = dim(X)[1]
 p = dim(X)[2]
 
@@ -69,6 +57,7 @@ Y.test.list = lapply(label.level, function(l) Y.test[label.test == l])
 label.train.list = lapply(label.level, function(l) label.train[label.train == l])
 n.train.vec = sapply(X.train.list, nrow)
 n.test.vec = sapply(X.test.list, nrow)
+n.vec = as.vector(table(label))
 n.train = sum(n.train.vec)
 n.test = sum(n.test.vec)
 
@@ -80,7 +69,6 @@ X.test.list = lapply(1:n_label, function(ix) sweep(X.test.list[[ix]], 2, X.train
 # data.frame format
 data.train.list = lapply(1:n_label, function(ix) data.frame(Y=Y.train.list[[ix]], X.train.list[[ix]]))
 data.test.list = lapply(1:n_label, function(ix) data.frame(Y=Y.test.list[[ix]], X.test.list[[ix]]))
-# data.krr.test.list = lapply(1:n_label, function(ix) constructData(y = Y.test.list[[ix]], x=X.test.list[[ix]]))
 
 # global lm
 data.train = data.frame(Y=Y.train, X.train)
@@ -114,7 +102,6 @@ mse.lm.WLS = sum(mse.lm.WLS.vec*n.test.vec)/sum(n.test.vec)
 # WLS ridge
 ml.ridge.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0, weights = w)
 Yhat.ridge.WLS.test = lapply(1:n_label, function(ix) predict(ml.ridge.WLS, s=ml.ridge.WLS$lambda.min, newx = X.test.list[[ix]]))
-# mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
 mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
 
@@ -122,7 +109,6 @@ mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
 ml.ridge.X.class = lapply(1:n_label, function(ix) cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], alpha = 0))
 Yhat.ridge.X.class.test = lapply(1:n_label, function(ix) predict(ml.ridge.X.class[[ix]], s=ml.ridge.X.class[[ix]]$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class.test[[ix]])-(Y.test.list[[ix]]))^2))
-# mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.X.class.test[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 
@@ -141,9 +127,10 @@ mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 # mse.krr.X.class = sum(mse.krr.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
-# X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
-mycut = X2U4(X.train.list, plot = F)
-X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
+X2U.list = lapply(X.train.list, function(X)  X2U1(X, plot = T))
+
+# mycut = X2U3(X.train.list, plot = T)
+# X2U.list = lapply(X.train.list, function(X)  X2U.cut(X, mycut))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P1.list = lapply(X2U.list, function(list) list$P1)
@@ -167,7 +154,6 @@ w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.t
 ml.ridge.U = cv.glmnet(x=U.train, y=Y_.train, weights = w, alpha = 0)
 Yhat.ridge.U.test = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-(Y.test.list[[ix]]))^2))
-#mse.ridge.sx.U.vec = sapply(1:n_label, function(ix) mean((exp(Yhat.ridge.U.test[[ix]]+Y_mean.list[[ix]])-exp(Y.test.list[[ix]]))^2))
 mse.ridge.sx.U = sum(mse.ridge.sx.U.vec*n.test.vec)/sum(n.test.vec)
 
 lambda.vec = glmnet(x = U.train, y= Y_.train, weights = w, alpha=0)$lambda

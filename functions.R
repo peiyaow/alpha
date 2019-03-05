@@ -54,6 +54,154 @@ X2U1 = function(X, K=50, plot = F){
   return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
+X2U2 = function(X, K=NULL, plot = F){ # estimate the factors give K
+  n = nrow(X)
+  p = floor(ncol(X)/2)
+  PCA.res = eigen(X%*%t(X)/n)
+  eigen_vals = PCA.res$values
+  if (plot){
+    par(mfrow=c(3,1))
+    plot(eigen_vals[1:(p-1)])
+    plot(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
+    plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+  }
+  if (is.null(K)){
+    K = which.max(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
+  }
+  F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
+  F1 = F_[,1]
+  #F1 = PCA.res$vectors[,1]*sqrt(n)
+  #F2 = PCA.res$vectors[,2]*sqrt(n)
+  F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
+  F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
+  P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
+  H = diag(n) - P
+  U = H%*%X
+  L = solve(t(F_)%*%F_)%*%t(F_)%*%X
+  L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
+  L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
+  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
+  return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res, U = U))
+}
+
+
+FnU = function(X0, x, F0, K){
+  # give single x, get F and U from x
+  X = rbind(X0,x)
+  n = nrow(X)
+  X.mean = apply(X, 2, mean)
+  X = sweep(X, 2, X.mean)
+  FF = X2U2(X, K = K)$F_
+  U = X2U2(X, K = K)$U
+  F0.new = FF[1:(n-1), ]
+  Fx = FF[n,]
+  Fx[-1] = t(t(Fx[-1])*sign(diag(as.matrix(cor(F0[,-1], F0.new[,-1])))))
+  Ux = U[n,]
+  return(list(F0.new = F0.new, Fx = Fx, Ux = Ux))
+}
+
+predict_method1_single = function(X.train.list, Y.train.list, x, l){
+  n.train.vec = sapply(X.train.list, nrow)
+  n_label = length(X.train.list)
+  X.combine.list = X.train.list
+  X.combine.list[[l]] = rbind(X.combine.list[[l]],x)
+  X.combine.mean = lapply(X.combine.list, colMeans)
+  X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
+  
+  X2U.list = lapply(X.combine.list, function(X)  X2U2(X))
+  H.list = lapply(X2U.list, function(list) list$H)
+  P1.list = lapply(X2U.list, function(list) list$P1)
+  K.list = lapply(X2U.list, function(list) list$K)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.combine.list[[ix]])
+  F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  
+  HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]][1:n.train.vec[ix],1:n.train.vec[ix]]%*%Y.train.list[[ix]])
+  PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]][1:n.train.vec[ix],1:n.train.vec[ix]]%*%Y.train.list[[ix]])
+  U.train.list = lapply(1:n_label, function(ix) U.list[[ix]][1:n.train.vec[ix],])
+  F.train.list = lapply(1:n_label, function(ix) F.list[[ix]][1:n.train.vec[ix],])
+  
+  u.test = U.list[[l]][n.train.vec[l]+1,]
+  f.test = F.list[[l]][n.train.vec[l]+1,]
+  
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  #---------------- get weights from OLS.U ----------------
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  ix.vec = c(0,cumsum(n.train.vec))
+  sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+  w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+  
+  #---------------- OLS.U with weights --------------------
+  ml.lm.U = lm(Y~., data = data.U.train, weights = w)
+  HYhat.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
+  res.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.train.list[[l]])
+  
+  # OLS.F on resid.OLS.U
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  PYhat.OLS.U.test = f.test%*%ml.lm.F.list[[l]]$coefficients
+  HYhat.OLS.U.test = c(1,u.test)%*%ml.lm.U$coefficients
+  Yhat.OLS.U.test = PYhat.OLS.U.test + HYhat.OLS.U.test
+  
+  #---------------- ridge.U with weights ------------------
+  ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
+  HYhat.ridge.train.list = lapply(1:n_label, function(l) predict(ml.ridge.U, s = ml.ridge.U$lambda.min, newx = U.train)[(ix.vec[l]+1):ix.vec[l+1]])
+  res.ridge.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.ridge.train.list[[l]])
+  
+  # OLS.F on resid.ridge.U
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.ridge.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  PYhat.ridge.U.test = f.test%*%ml.lm.F.list[[l]]$coefficients
+  HYhat.ridge.U.test = predict(ml.ridge.U, s=ml.ridge.U$lambda.min, t(u.test))
+  Yhat.ridge.U.test = PYhat.ridge.U.test + HYhat.ridge.U.test
+  
+  #-------------- get weights from OLS.U and OLS.F -----------------
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  HYhat.lm.U.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
+  res.lm.U.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.lm.U.train.list[[l]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.lm.U.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  Yhat.lm.U.train.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]] + ml.lm.F.list[[ix]]$fitted.values)
+  sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train.list[[l]])^2))
+  w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
+  
+  #---------------- OLS.U with weights --------------------
+  ml.lm.U = lm(Y~., data = data.U.train, weights = w)
+  HYhat.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
+  res.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.train.list[[l]])
+  
+  # OLS.F on resid.OLS.U
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  PYhat.OLS.U.test = f.test%*%ml.lm.F.list[[l]]$coefficients
+  HYhat.OLS.U.test = c(1,u.test)%*%ml.lm.U$coefficients
+  Yhat.OLS.U.test1 = PYhat.OLS.U.test + HYhat.OLS.U.test
+  
+  #---------------- ridge.U with weights ------------------
+  ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
+  HYhat.ridge.train.list = lapply(1:n_label, function(l) predict(ml.ridge.U, s = ml.ridge.U$lambda.min, newx = U.train)[(ix.vec[l]+1):ix.vec[l+1]])
+  res.ridge.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.ridge.train.list[[l]])
+  
+  # OLS.F on resid.ridge.U
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.ridge.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  PYhat.ridge.U.test = f.test%*%ml.lm.F.list[[l]]$coefficients
+  HYhat.ridge.U.test = predict(ml.ridge.U, s=ml.ridge.U$lambda.min, t(u.test))
+  Yhat.ridge.U.test1 = PYhat.ridge.U.test + HYhat.ridge.U.test
+  
+  
+  return(list(Yhat = c(Yhat.OLS.U.test, Yhat.ridge.U.test, Yhat.OLS.U.test1, Yhat.ridge.U.test1)))
+}
 
 X2U.K = function(X, K = 50, plot = T){
   n = nrow(X)
@@ -110,9 +258,6 @@ X2U4 = function(X.list, K = 50, plot = T){
   
   return(cut.eigen)
 }
-
-
-
 
 X2U4.kernel = function(X.list, K = 50, gamma = NULL, plot = T){
   eigen.vec = c()
@@ -215,22 +360,22 @@ X2U.kernel.cut = function(X, cut, gamma = NULL){
 }
 
   
-X2U2 = function(X, K=50, plot = T){
-  n = nrow(X)
-  PCA.res = eigen(X%*%t(X))
-  
-  eigen_vals = PCA.res$values
-  if (plot){
-    par(mfrow=c(2,1))
-    plot(eigen_vals[1:K])
-    plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
-  }
-  K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
-  F_ = PCA.res$vectors[,1:K]*sqrt(n)
-  P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
-  H = diag(n) - P
-  return(list(H = H, P = P, K = K))
-}
+# X2U2 = function(X, K=50, plot = T){
+#   n = nrow(X)
+#   PCA.res = eigen(X%*%t(X))
+#   
+#   eigen_vals = PCA.res$values
+#   if (plot){
+#     par(mfrow=c(2,1))
+#     plot(eigen_vals[1:K])
+#     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+#   }
+#   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
+#   F_ = PCA.res$vectors[,1:K]*sqrt(n)
+#   P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+#   H = diag(n) - P
+#   return(list(H = H, P = P, K = K))
+# }
 
 
 # for training data X1 and X2
@@ -417,6 +562,8 @@ cv.glmnet_ = function(X, Y, U, Y_, label, w, alpha = 0, lambda.vec, nfolds){
   best.ml = glmnet(x = U, y = Y_, weights = w, lambda = lambda.min, alpha = alpha)
   return(list(best.ml = best.ml, mse.vec = mse.vec, lambda.min = lambda.min))
 }
+
+
 
 
 
