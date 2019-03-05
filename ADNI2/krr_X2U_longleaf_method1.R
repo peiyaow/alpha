@@ -234,6 +234,11 @@ mse.lm.single.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]
 mse.lm.single.U2 = sum(mse.lm.single.U.vec2*n.test.vec)/sum(n.test.vec)
 
 
+file.name = c("result_overall.csv")
+write.table(t(c(mse.lm.global, mse.ridge.global, mse.lm.WLS, mse.ridge.WLS, mse.ridge.X.class, mse.lm.U1, mse.ridge.U1, mse.lm.U2, mse.ridge.U2, mse.lm.single.U1, mse.ridge.single.U1, mse.lm.single.U2, mse.ridge.single.U2, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+
+file.name = c("result_class.csv")
+write.table(t(c(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2,mse.lm.single.U.vec1, mse.ridge.single.U.vec1, mse.lm.single.U.vec2, mse.ridge.single.U.vec2, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
 
 
