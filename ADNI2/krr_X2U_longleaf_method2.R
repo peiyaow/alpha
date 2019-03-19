@@ -16,9 +16,9 @@ require(methods)
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean3.RData")
 
-X = X[-c(770),]
-label = label[-c(770)]
-Y = Y[-c(770)]
+# X = X[-c(770),]
+# label = label[-c(770)]
+# Y = Y[-c(770)]
 # 
 # X = X[label!=4,]
 # Y = Y[label!=4]
@@ -127,7 +127,7 @@ mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
 
-threshold.vec = floor(sort(sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], threshold)$cor.vec), decreasing = T)*1000)/1000
+threshold.vec = floor(sort(sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], 0.2)$cor.vec), decreasing = T)*1000)/1000
 threshold.vec = threshold.vec[threshold.vec>0.1]
 res = cv.select_threshold.method2(threshold.vec, X.train.list, Y.train.list, nfolds = 10)
 threshold = res$threshold
