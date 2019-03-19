@@ -60,20 +60,27 @@ X2U2 = function(X, K=NULL, plot = F){ # estimate the factors give K
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
   if (plot){
-    par(mfrow=c(3,1))
+    par(mfrow=c(4,1))
     plot(eigen_vals[1:(p-1)])
     plot(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
+    a = eigen_vals[1:(p-1)]/eigen_vals[2:(p)]
+    plot(a[-(p-1)]/a[-1])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
   }
   if (is.null(K)){
+    #a = eigen_vals[1:(p-1)]/eigen_vals[2:(p)]
+    #K = which.max(a[-(p-1)]/a[-1])
     K = which.max(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
   }
-  F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
-  F1 = F_[,1]
-  #F1 = PCA.res$vectors[,1]*sqrt(n)
-  #F2 = PCA.res$vectors[,2]*sqrt(n)
+  # print(eigen_vals[K+1])
+  if (K==0){
+    F_ = as.matrix(rep(1, n))
+  }else{
+    F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
+  }
+  F1 = F_[,1] # all ones
   F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
-  F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
+  F_res = PCA.res$vectors[,3:n]*sqrt(n) # 3: other factors
   P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
   P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
   H = diag(n) - P
@@ -81,10 +88,30 @@ X2U2 = function(X, K=NULL, plot = F){ # estimate the factors give K
   L = solve(t(F_)%*%F_)%*%t(F_)%*%X
   L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
   L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
-  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
   return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res, U = U))
 }
 
+X2F = function(X){ 
+  n = nrow(X)
+  PCA.res = eigen(X%*%t(X)/n)
+  eigen_vals = PCA.res$values
+  # print(eigen_vals)
+  F_ = cbind(1,PCA.res$vectors*sqrt(n))
+  return(list(F_ = F_))
+}
+
+getK = function(Y, X, threshold = 0.2){
+  X2F.res = X2F(X)
+  # print(head(abs(cor(X2F.res$F_[,-1], Y))))
+  # print(abs(cor(X2F.res$F_[,-1], Y)))
+  # plot(abs(cor(X2F.res$F_[,-1], Y)))
+  ix.vec = 1:length(Y)
+  K = 0
+  while (K < length(Y) & (abs(cor(X2F.res$F_[,-1], Y)))[K+1] > threshold){
+    K=K+1
+  }
+  return(list(K = K, K.vec = ix.vec[abs(cor(X2F.res$F_[,-1], Y)) > threshold], cor.vec = head(abs(cor(X2F.res$F_[,-1], Y)))))
+}
 
 FnU = function(X0, x, F0, K){
   # give single x, get F and U from x
@@ -244,10 +271,11 @@ X2U4 = function(X.list, K = 50, plot = T){
   }
   sort_eigen.vec = sort(eigen.vec, decreasing = T)
   if (plot){
-    par(mfrow=c(2,1))
+    par(mfrow=c(3,1))
     plot(sort_eigen.vec[1:K])
     plot(sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)])
-    
+    a = sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)]
+    plot(a[-(K)]/a[-1])
   }
   ratio.eigen = sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)]
   K = 1
@@ -344,9 +372,9 @@ X2U.kernel.cut = function(X, cut, gamma = NULL){
   kermat = kermat/n
   PCA.res = eigen(kermat)
   eigen_vals = PCA.res$values
-  print(eigen_vals)
+  # print(eigen_vals)
   K = n - length(eigen_vals[eigen_vals<cut])
-  print(K)
+  # print(K)
   if (K == 0){
     F_ = 0
     P = matrix(0, nrow = n, ncol = n)
@@ -442,7 +470,7 @@ cv.krr = function(K, Y, lambda.vec, nfolds){
     Yhat.mtx = sapply(lambda.vec, function(lam) krr(K.train, Y.train, lam, K.val)$Y.test) # n.val by llam
     mse.list[[k]] = apply(sweep(Yhat.mtx, 1, Y.val), 2, function(col) mean(col^2))
   }
-  mse.vec = apply(do.call(rbind,mse.list), 2, mean)
+  mse.vec = apply(do.call(rbind, mse.list), 2, mean)
   lambda.min = lambda.vec[which.min(mse.vec)]
   best.ml = krr(K, Y, lambda.min)
   return(list(best.ml = best.ml, mse.vec = mse.vec, lambda.min = lambda.min))
@@ -563,7 +591,67 @@ cv.glmnet_ = function(X, Y, U, Y_, label, w, alpha = 0, lambda.vec, nfolds){
   return(list(best.ml = best.ml, mse.vec = mse.vec, lambda.min = lambda.min))
 }
 
+lm.U = function(HY.train.list, PY.train.list, F.train.list, U.train.list){
+  n_label = length(HY.train.list)
+  n.train.vec = sapply(1:n_label, function(l) length(HY.train.list[[l]]))
+  
+  # U
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  ix.vec = c(0,cumsum(n.train.vec))
+  sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+  w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+  ml.lm.U = lm(Y~., data = data.U.train, weights = w)
+  
+  # F
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = PY.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  return(list(ml.lm.U = ml.lm.U, ml.lm.F.list = ml.lm.F.list))
+}
 
+cv.select_threshold = function(threshold.vec, Y.train.list, X.train.list, nfolds){
+  n_label = length(Y.train.list)
+  flds.list = lapply(1:n_label, function(l) createFolds(Y.train.list[[l]], k = nfolds, list = TRUE, returnTrain = FALSE))
+  n_thres = length(threshold.vec)
+  mse.list = list()
+  for (k in 1:nfolds){
+    mse.list[[k]] = list()
+    for (t in 1:n_thres){
+      K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], threshold.vec[t])$K)
+      X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list[[ix]], K = K.list[[ix]], plot = F))
+      
+      H.list = lapply(X2U.list, function(list) list$H)
+      P.list = lapply(X2U.list, function(list) list$P)
+      
+      U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list[[ix]])
+      F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+      HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+      PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
+      
+      U.train.list1 = lapply(1:n_label, function(l) U.train.list[[l]][unlist(flds.list[[l]][-k]),])
+      U.train.list2 = lapply(1:n_label, function(l) U.train.list[[l]][unlist(flds.list[[l]][k]),])
+      F.train.list1 = lapply(1:n_label, function(l) as.matrix(F.train.list[[l]][unlist(flds.list[[l]][-k]),]))
+      F.train.list2 = lapply(1:n_label, function(l) as.matrix(F.train.list[[l]][unlist(flds.list[[l]][k]),]))
+      HY.train.list1 = lapply(1:n_label, function(l) HY.train.list[[l]][unlist(flds.list[[l]][-k]),])
+      HY.train.list2 = lapply(1:n_label, function(l) HY.train.list[[l]][unlist(flds.list[[l]][k]),])
+      PY.train.list1 = lapply(1:n_label, function(l) PY.train.list[[l]][unlist(flds.list[[l]][-k]),])
+      PY.train.list2 = lapply(1:n_label, function(l) PY.train.list[[l]][unlist(flds.list[[l]][k]),])
+      
+      n.vec2 = sapply(1:n_label, function(l) length(PY.train.list1[[l]]))
+      ml.lm.list = lm.U(HY.train.list1, PY.train.list1, F.train.list1, U.train.list1)
+      PYhat.list = lapply(1:n_label, function(ix) F.train.list2[[ix]]%*%ml.lm.list$ml.lm.F.list[[ix]]$coefficients)
+      HYhat.list = lapply(1:n_label, function(ix) cbind(1,U.train.list2[[ix]])%*%ml.lm.list$ml.lm.U$coefficients)
+      mse.vec = sapply(1:n_label, function(l)  mean((PYhat.list[[l]]+HYhat.list[[l]]-PY.train.list2[[l]]-HY.train.list2[[l]])^2))
+      mse.list[[k]][[t]] = sum(mse.vec*n.vec2)/sum(n.vec2)
+    }
+    mse.list[[k]] = do.call(c, mse.list[[k]])
+  }
+  return(list(threshold = threshold.vec[which.min(apply(do.call(rbind, mse.list), 2, mean))], mse.vec = apply(do.call(rbind, mse.list), 2, mean)))
+}
 
 
 

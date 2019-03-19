@@ -53,14 +53,10 @@ Y1 = Y[label==0]
 boxplot(Y1)
 X1.mean = apply(X1, 2, mean)
 X1 = sweep(X1, 2, X1.mean)
-F1 = X2U(X1, plot = T)$F_
 
-F1.1 = X2U(X1, plot = T)$F1
-F1.2 = X2U(X1, plot = T)$F2
-boxplot(F1.1)
-boxplot(F1.2)
-plot(F1.1, F1.2)
-
+F1.2 = X2U2(X1, plot = T)$F2
+plot(F1.2)
+ix.NC[F1.2[,1]< (-4)]
 summary(lm(Y1~F1))
 plot(F1, Y1)
 
@@ -72,7 +68,7 @@ sort(Y2)
 
 X2.mean = apply(X2, 2, mean)
 X2 = sweep(X2, 2, X2.mean)
-F2 = X2U(X2, plot = T)$F_
+F2 = X2U2(X2, plot = T)$F_
 
 F2.1 = X2U(X2, plot = T)$F1
 F2.2 = X2U(X2, plot = T)$F2
