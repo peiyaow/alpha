@@ -340,10 +340,10 @@ mse.ridge.U2 = sum(mse.ridge.U.vec2*n.test.vec)/sum(n.test.vec)
 # 
 # diff.PYhat.vec + diff.HYhat.vec + cross.HYhatPYhat.vec
 
-file.name = c("result_overall.csv")
+file.name = paste0("result_overall_", threshold*100/5, ".csv")
 write.table(t(c(mse.lm.global, mse.ridge.global, mse.lm.WLS, mse.ridge.WLS, mse.ridge.X.class, mse.lm.U1, mse.ridge.U1, mse.lm.U2, mse.ridge.U2,myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 
-file.name = c("result_class.csv")
+file.name = paste0("result_class_", threshold*100/5, ".csv")
 write.table(t(c(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2, myseed)), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 rbind(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2, myseed)
 
