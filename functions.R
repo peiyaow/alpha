@@ -100,17 +100,37 @@ X2F = function(X){
   return(list(F_ = F_))
 }
 
-getK = function(Y, X, threshold = 0.2){
+getK = function(Y, X, threshold = 0.2, plot = F){
   X2F.res = X2F(X)
   # print(head(abs(cor(X2F.res$F_[,-1], Y))))
   # print(abs(cor(X2F.res$F_[,-1], Y)))
-  # plot(abs(cor(X2F.res$F_[,-1], Y)))
+  if (plot){
+    plot(abs(cor(X2F.res$F_[,-1], Y)))
+  }
   ix.vec = 1:length(Y)
   K = 0
   while (K < length(Y) & (abs(cor(X2F.res$F_[,-1], Y)))[K+1] > threshold){
     K=K+1
   }
-  return(list(K = K, K.vec = ix.vec[abs(cor(X2F.res$F_[,-1], Y)) > threshold], cor.vec = head(abs(cor(X2F.res$F_[,-1], Y)))))
+  return(list(K = K, K.vec = ix.vec[abs(cor(X2F.res$F_[,-1], Y)) > threshold], cor.vec = abs(cor(X2F.res$F_[,-1], Y))))
+}
+
+getK_2 = function(Y, X, threshold = 0.2, plot = F){
+  X2F.res = X2F(X)
+  # print(head(abs(cor(X2F.res$F_[,-1], Y))))
+  # print(abs(cor(X2F.res$F_[,-1], Y)))
+  if (plot){
+    plot(abs(cor(X2F.res$F_[,-1], Y)))
+  }
+  ix.vec = 1:length(Y)
+  K = length(Y)
+  while (K > 0 & (abs(cor(X2F.res$F_[,-1], Y)))[K] < threshold){
+    K=K-1
+    if (K==0){
+      break
+    }
+  }
+  return(list(K = K, K.vec = ix.vec[abs(cor(X2F.res$F_[,-1], Y)) > threshold], cor.vec = abs(cor(X2F.res$F_[,-1], Y))))
 }
 
 FnU = function(X0, x, F0, K){
@@ -121,7 +141,7 @@ FnU = function(X0, x, F0, K){
   X = sweep(X, 2, X.mean)
   FF = X2U2(X, K = K)$F_
   U = X2U2(X, K = K)$U
-  F0.new = FF[1:(n-1), ]
+  F0.new = as.matrix(FF[1:(n-1), ])
   Fx = FF[n,]
   Fx[-1] = t(t(Fx[-1])*sign(diag(as.matrix(cor(F0[,-1], F0.new[,-1])))))
   Ux = U[n,]
@@ -621,7 +641,7 @@ cv.select_threshold = function(threshold.vec, Y.train.list, X.train.list, nfolds
   for (k in 1:nfolds){
     mse.list[[k]] = list()
     for (t in 1:n_thres){
-      K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], threshold.vec[t])$K)
+      K.list = lapply(1:n_label, function(l) (Y.train.list[[l]], X.train.list[[l]], threshold.vec[t])$K)
       X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list[[ix]], K = K.list[[ix]], plot = F))
       
       H.list = lapply(X2U.list, function(list) list$H)
@@ -662,7 +682,7 @@ lm.U.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, thres
   X.train.mean = lapply(X.train.list, colMeans)
   X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
   
-  K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  K.list = lapply(1:n_label, function(l) (Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
   X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
   
   H.list = lapply(X2U.list, function(list) list$H)
@@ -723,7 +743,7 @@ ridge.U.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, th
   X.train.mean = lapply(X.train.list, colMeans)
   X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
   
-  K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  K.list = lapply(1:n_label, function(l) (Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
   X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
   
   H.list = lapply(X2U.list, function(list) list$H)
@@ -783,7 +803,7 @@ lm.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, thre
   X.train.mean = lapply(X.train.list, colMeans)
   X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
   
-  K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  K.list = lapply(1:n_label, function(l) (Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
   X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
   
   H.list = lapply(X2U.list, function(list) list$H)
@@ -851,7 +871,7 @@ ridge.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, t
   X.train.mean = lapply(X.train.list, colMeans)
   X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
   
-  K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  K.list = lapply(1:n_label, function(l) (Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
   X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
   
   H.list = lapply(X2U.list, function(list) list$H)

@@ -126,12 +126,26 @@ mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
+# par(mfrow = c(5,1))
+# F.train.list = lapply(X.train.list, function(X) X2F(X)$F_[,2:10])
+# F_concat = do.call(rbind, F.train.list)
+Y_concat = do.call(c, Y.train.list)
+X_concat = do.call(rbind, X.train.list)
+threshold = sort(abs(cor(Y_concat, X_concat)), decreasing = T)[1]
+# sort(abs(cor(Y.train.list[[4]], X.train.list[[4]])))
 
-threshold.vec = floor(sort(sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], 0.2)$cor.vec), decreasing = T)*1000)/1000
-threshold.vec = threshold.vec[threshold.vec>0.1]
-res = cv.select_threshold.method2(threshold.vec, X.train.list, Y.train.list, nfolds = 10)
-threshold = res$threshold
-
+# corr.vec = sort(do.call(c, sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], 0.2, plot = F)$cor.vec)), decreasing = T)[1:100]
+# plot(corr.vec)
+# plot(corr.vec[1:100]/corr.vec[2:101])
+# 
+# threshold.vec = floor(sort(sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], 0.2, plot = F)$cor.vec[1:5]), decreasing = T)*1000)/1000
+# threshold.vec = threshold.vec[threshold.vec>0.1]
+# res = cv.select_threshold.method2(threshold.vec, X.train.list, Y.train.list, nfolds = 10)
+# threshold = res$threshold
+# K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], threshold)$K)
+# 
+# K.list = sapply(1:n_label, function(l) getK_2(Y.train.list[[l]], X.train.list[[l]], threshold = 0.3, plot = F)$K)
+# corr.list = sapply(1:n_label, function(l) head(getK_2(Y.train.list[[l]], X.train.list[[l]], threshold = 0.3, plot = F)$cor.vec))
 # K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], threshold)$K)
 # # X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list[[ix]],plot = T))
 # X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list[[ix]], K = K.list[[ix]], plot = F))
@@ -152,8 +166,8 @@ threshold = res$threshold
 # data.U.train = data.frame(Y = HY.train, U.train)
 
 # ----------------------------- get F.test.list and U.test.list ------------------------------------
-X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
-X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
+# X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
+# X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
 # X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test.list[[ix]]))
 # 
 # X.combine.mean = lapply(X.combine.list, colMeans)
@@ -180,7 +194,7 @@ X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
 # # -------------------------------------------------------------------------------------------------
 # 
 # # ------------------------------- compute weights from OLS.U --------------------------------------
-# ml.lm.U = lm(Y~., data = data.U.train)  
+# ml.lm.U = lm(Y~., data = data.U.train)
 # ix.vec = c(0,cumsum(n.train.vec))
 # sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
 # w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
@@ -214,7 +228,7 @@ X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
 # # -------------------------------------------------------------------------------------------------
 # 
 # # ----------------------- compute weights from OLS.U and OLS.F ------------------------------------
-# ml.lm.U = lm(Y~., data = data.U.train)  
+# ml.lm.U = lm(Y~., data = data.U.train)
 # HYhat.lm.U.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
 # res.lm.U.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.lm.U.train.list[[l]])
 # data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.lm.U.train.list[[ix]], F.train.list[[ix]][,-1]))
@@ -248,6 +262,10 @@ X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
 # mse.ridge.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
 # mse.ridge.U2 = sum(mse.ridge.U.vec2*n.test.vec)/sum(n.test.vec)
 # 
+# # rbind(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2)
+
+X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
+X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
 
 Yhat.test.list = lm.U.threshold.method2(X.train.list, Y.train.list, X.test.list, threshold)$Yhat.test.list
 mse.lm.U.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))

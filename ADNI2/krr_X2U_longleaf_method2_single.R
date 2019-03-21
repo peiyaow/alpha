@@ -112,6 +112,9 @@ mse.ridge.X.class.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.X.class
 mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
+threshold.vec = floor(sort(sapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list[[l]], 0.2)$cor.vec), decreasing = T)*1000)/1000
+threshold.vec = threshold.vec[threshold.vec>0.1]
+
 X2U.list = lapply(X.train.list, function(X)  X2U2(X, plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
