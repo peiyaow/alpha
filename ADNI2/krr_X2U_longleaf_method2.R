@@ -283,9 +283,27 @@ Yhat.test.list = ridge.U2.threshold.method2(X.train.list, Y.train.list, X.test.l
 mse.ridge.U.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
 mse.ridge.U2 = sum(mse.ridge.U.vec2*n.test.vec)/sum(n.test.vec)
 
+
+# single
+Yhat.test.list = lm.U.threshold.method2.single(X.train.list, Y.train.list, X.test.list, threshold)$Yhat.test.list
+mse.lm.U.single.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U1.single = sum(mse.lm.U.single.vec1*n.test.vec)/sum(n.test.vec)
+
+Yhat.test.list = lm.U2.threshold.method2.single(X.train.list, Y.train.list, X.test.list, threshold)$Yhat.test.list
+mse.lm.U.single.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.lm.U2.single = sum(mse.lm.U.single.vec2*n.test.vec)/sum(n.test.vec)
+
+Yhat.test.list = ridge.U.threshold.method2.single(X.train.list, Y.train.list, X.test.list, threshold)$Yhat.test.list
+mse.ridge.U.single.vec1 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U1.single = sum(mse.ridge.U.single.vec1*n.test.vec)/sum(n.test.vec)
+
+Yhat.test.list = ridge.U2.threshold.method2.single(X.train.list, Y.train.list, X.test.list, threshold)$Yhat.test.list
+mse.ridge.U.single.vec2 = sapply(1:n_label, function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+mse.ridge.U2.single = sum(mse.ridge.U.single.vec2*n.test.vec)/sum(n.test.vec)
+
 # -------------------------------------------------------------------------------------------------
-# c(mse.lm.global, mse.ridge.global, mse.lm.WLS, mse.ridge.WLS, mse.ridge.X.class, mse.lm.U1, mse.ridge.U1, mse.lm.U2, mse.ridge.U2)
-# rbind(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2)
+# c(mse.lm.global, mse.ridge.global, mse.lm.WLS, mse.ridge.WLS, mse.ridge.X.class, mse.lm.U1, mse.ridge.U1, mse.lm.U2, mse.ridge.U2, mse.lm.U1.single, mse.ridge.U1.single, mse.lm.U2.single, mse.ridge.U2.single)
+# rbind(mse.lm.global.vec, mse.ridge.global.vec, mse.lm.WLS.vec, mse.ridge.WLS.vec, mse.ridge.X.class.vec, mse.lm.U.vec1, mse.ridge.U.vec1, mse.lm.U.vec2, mse.ridge.U.vec2, mse.lm.U.single.vec1, mse.ridge.U.single.vec1, mse.lm.U.single.vec2, mse.ridge.U.single.vec2)
 
 
 # # lm and wls ridge

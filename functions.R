@@ -1,6 +1,6 @@
 library(kernlab)
 library(CVST)
-X2U = function(X, K=50, plot = T){
+X2U = function(X, K=50, plot = F){
   n = nrow(X)
 #  p = ncol(X)
   PCA.res = eigen(X%*%t(X)/n)
@@ -93,11 +93,18 @@ X2U2 = function(X, K=NULL, plot = F){ # estimate the factors give K
 
 X2F = function(X){ 
   n = nrow(X)
+  p = ncol(X)
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
   # print(eigen_vals)
-  F_ = cbind(1,PCA.res$vectors*sqrt(n))
-  return(list(F_ = F_))
+  if (p < n){
+    F_ = cbind(1,(PCA.res$vectors*sqrt(n))[,1:p])
+  }else{
+    F_ = cbind(1,(PCA.res$vectors*sqrt(n)))
+  }
+  return(list(F_ = F_, eigen_vals = eigen_vals))
+  # L = solve(t(F_)%*%F_)%*%t(F_)%*%X
+  #return(list(F_ = F_, L = L))
 }
 
 getK = function(Y, X, threshold = 0.2, plot = F){
@@ -146,6 +153,24 @@ FnU = function(X0, x, F0, K){
   Fx[-1] = t(t(Fx[-1])*sign(diag(as.matrix(cor(F0[,-1], F0.new[,-1])))))
   Ux = U[n,]
   return(list(F0.new = F0.new, Fx = Fx, Ux = Ux))
+}
+
+screenK = function(p_values, forward = T){
+  if(forward){
+    K = 0
+    while (K < length(p_values) & p_values[K+1] < 0.05){
+      K = K+1
+    }
+  }else{
+    K = length(p_values)
+    while (p_values[K]> 0.05){
+      K = K-1
+      if(K == 0){
+        break
+      }
+    }
+  }
+  return(K)
 }
 
 predict_method1_single = function(X.train.list, Y.train.list, x, l){
@@ -734,6 +759,69 @@ lm.U.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, thres
   return(list(Yhat.test.list = Yhat.test.list))
 }
 
+
+
+lm.U.K.method2 = function(X.train.list, Y.train.list, X.test.list, K.list){
+  n.train.vec = sapply(X.train.list, nrow)
+  n.test.vec = sapply(X.test.list, nrow)
+  n.vec = n.train.vec + n.test.vec
+  n_label = length(X.train.list)
+  
+  X.train.mean = lapply(X.train.list, colMeans)
+  X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
+  
+  # K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
+  
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list1[[ix]])
+  F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+  PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
+  
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  # new prediction
+  X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test.list[[ix]]))
+  X.combine.mean = lapply(X.combine.list, colMeans)
+  X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
+  
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = F))
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.combine.list[[ix]])
+  F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  F.train.new.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][1:n.train.vec[ix],]))
+  U.train.new.list = lapply(1:n_label, function(ix) U.list[[ix]][1:n.train.vec[ix],])
+  
+  for (ix in 1:n_label){
+    F.list[[ix]][,-1] = t(t(F.list[[ix]][,-1])*sign(diag(as.matrix(cor(F.train.new.list[[ix]][,-1], F.train.list[[ix]][,-1])))))
+  }
+  U.test.list = lapply(1:n_label, function(ix) U.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],])
+  F.test.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],]))
+  
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  ix.vec = c(0,cumsum(n.train.vec))
+  sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+  w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+  
+  ml.lm.U = lm(Y~., data = data.U.train, weights = w)
+  HYhat.train.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = PY.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  
+  PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+  HYhat.test.list = lapply(1:n_label, function(ix) cbind(1,U.test.list[[ix]])%*%ml.lm.U$coefficients)
+  Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
+  
+  return(list(Yhat.test.list = Yhat.test.list))
+}
+
 ridge.U.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, threshold){
   n.train.vec = sapply(X.train.list, nrow)
   n.test.vec = sapply(X.test.list, nrow)
@@ -793,6 +881,67 @@ ridge.U.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, th
   Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
   return(list(Yhat.test.list = Yhat.test.list))
 }
+
+ridge.U.K.method2 = function(X.train.list, Y.train.list, X.test.list, K.list){
+  n.train.vec = sapply(X.train.list, nrow)
+  n.test.vec = sapply(X.test.list, nrow)
+  n.vec = n.train.vec + n.test.vec
+  n_label = length(X.train.list)
+  
+  X.train.mean = lapply(X.train.list, colMeans)
+  X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
+  
+  # K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
+  
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list1[[ix]])
+  F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+  PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
+  
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  # new prediction
+  X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test.list[[ix]]))
+  X.combine.mean = lapply(X.combine.list, colMeans)
+  X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
+  
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = F))
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.combine.list[[ix]])
+  F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  F.train.new.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][1:n.train.vec[ix],]))
+  U.train.new.list = lapply(1:n_label, function(ix) U.list[[ix]][1:n.train.vec[ix],])
+  
+  for (ix in 1:n_label){
+    F.list[[ix]][,-1] = t(t(F.list[[ix]][,-1])*sign(diag(as.matrix(cor(F.train.new.list[[ix]][,-1], F.train.list[[ix]][,-1])))))
+  }
+  U.test.list = lapply(1:n_label, function(ix) U.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],])
+  F.test.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],]))
+  
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  ix.vec = c(0,cumsum(n.train.vec))
+  sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
+  w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
+  
+  # weighted ridge: weights from OLS.U
+  ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
+  HYhat.ridge.train.list = lapply(1:n_label, function(l) predict(ml.ridge.U, s = ml.ridge.U$lambda.min, newx = U.train)[(ix.vec[l]+1):ix.vec[l+1]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = PY.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+  HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
+  Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
+  return(list(Yhat.test.list = Yhat.test.list))
+}
+
 
 lm.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, threshold){
   n.train.vec = sapply(X.train.list, nrow)
@@ -862,6 +1011,74 @@ lm.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, thre
   return(list(Yhat.test.list = Yhat.test.list))
 }
 
+lm.U2.K.method2 = function(X.train.list, Y.train.list, X.test.list, K.list){
+  n.train.vec = sapply(X.train.list, nrow)
+  n.test.vec = sapply(X.test.list, nrow)
+  n.vec = n.train.vec + n.test.vec
+  n_label = length(X.train.list)
+  
+  X.train.mean = lapply(X.train.list, colMeans)
+  X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
+  
+  # K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
+  
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list1[[ix]])
+  F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+  PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
+  
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  # new prediction
+  X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test.list[[ix]]))
+  X.combine.mean = lapply(X.combine.list, colMeans)
+  X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
+  
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = F))
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.combine.list[[ix]])
+  F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  F.train.new.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][1:n.train.vec[ix],]))
+  U.train.new.list = lapply(1:n_label, function(ix) U.list[[ix]][1:n.train.vec[ix],])
+  
+  for (ix in 1:n_label){
+    F.list[[ix]][,-1] = t(t(F.list[[ix]][,-1])*sign(diag(as.matrix(cor(F.train.new.list[[ix]][,-1], F.train.list[[ix]][,-1])))))
+  }
+  U.test.list = lapply(1:n_label, function(ix) U.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],])
+  F.test.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],]))
+  
+  
+  # compute weights
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  HYhat.lm.U.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
+  res.lm.U.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.lm.U.train.list[[l]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.lm.U.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  Yhat.lm.U.train.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]] + ml.lm.F.list[[ix]]$fitted.values)
+  sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train.list[[l]])^2))
+  w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
+  
+  # WLS.U: weights from OLS.U and OLS.F
+  ml.lm.U = lm(Y~., data = data.U.train, weights = w)
+  HYhat.train.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]])
+  res.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.train.list[[l]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+  HYhat.test.list = lapply(1:n_label, function(ix) cbind(1, U.test.list[[ix]])%*%ml.lm.U$coefficients)
+  Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
+  
+  return(list(Yhat.test.list = Yhat.test.list))
+}
+
 ridge.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, threshold){
   n.train.vec = sapply(X.train.list, nrow)
   n.test.vec = sapply(X.test.list, nrow)
@@ -872,6 +1089,71 @@ ridge.U2.threshold.method2 = function(X.train.list, Y.train.list, X.test.list, t
   X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
   
   K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
+  
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.train.list1[[ix]])
+  F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+  PY.train.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.train.list[[ix]])
+  
+  U.train = do.call(rbind, U.train.list)
+  HY.train = do.call(c, HY.train.list)
+  data.U.train = data.frame(Y = HY.train, U.train)
+  
+  # new prediction
+  X.combine.list = lapply(1:n_label, function(ix) rbind(X.train.list[[ix]], X.test.list[[ix]]))
+  X.combine.mean = lapply(X.combine.list, colMeans)
+  X.combine.list = lapply(1:n_label, function(ix) sweep(X.combine.list[[ix]], 2, X.combine.mean[[ix]]))
+  
+  X2U.list = lapply(1:n_label, function(ix) X2U2(X.combine.list[[ix]], K = K.list[[ix]], plot = F))
+  H.list = lapply(X2U.list, function(list) list$H)
+  P.list = lapply(X2U.list, function(list) list$P)
+  
+  U.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%X.combine.list[[ix]])
+  F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+  F.train.new.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][1:n.train.vec[ix],]))
+  U.train.new.list = lapply(1:n_label, function(ix) U.list[[ix]][1:n.train.vec[ix],])
+  
+  for (ix in 1:n_label){
+    F.list[[ix]][,-1] = t(t(F.list[[ix]][,-1])*sign(diag(as.matrix(cor(F.train.new.list[[ix]][,-1], F.train.list[[ix]][,-1])))))
+  }
+  U.test.list = lapply(1:n_label, function(ix) U.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],])
+  F.test.list = lapply(1:n_label, function(ix) as.matrix(F.list[[ix]][(n.train.vec[ix]+1):n.vec[ix],]))
+  
+  # compute weights
+  ml.lm.U = lm(Y~., data = data.U.train)  
+  HYhat.lm.U.train.list = lapply(1:n_label, function(l) ml.lm.U$fitted.values[(ix.vec[l]+1):ix.vec[l+1]])
+  res.lm.U.train.list = lapply(1:n_label, function(l) Y.train.list[[l]] - HYhat.lm.U.train.list[[l]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = res.lm.U.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  Yhat.lm.U.train.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]] + ml.lm.F.list[[ix]]$fitted.values)
+  sigma2 = sapply(1:n_label, function(l) mean((Y.train.list[[l]] - Yhat.lm.U.train.list[[l]])^2))
+  w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.train.vec[l])), n.train.vec[l])))
+  
+  # weighted ridge: weights from OLS.U
+  ml.ridge.U = cv.glmnet(x = U.train, y = HY.train, weights = w, alpha = 0)
+  HYhat.ridge.train.list = lapply(1:n_label, function(l) predict(ml.ridge.U, s = ml.ridge.U$lambda.min, newx = U.train)[(ix.vec[l]+1):ix.vec[l+1]])
+  data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = PY.train.list[[ix]], F.train.list[[ix]][,-1]))
+  ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+  PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+  HYhat.test.list = lapply(1:n_label, function(ix) predict(ml.ridge.U, s=ml.ridge.U$lambda.min, U.test.list[[ix]]))
+  Yhat.test.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.list[[ix]])
+  return(list(Yhat.test.list = Yhat.test.list))
+}
+
+ridge.U2.K.method2 = function(X.train.list, Y.train.list, X.test.list, K.list){
+  n.train.vec = sapply(X.train.list, nrow)
+  n.test.vec = sapply(X.test.list, nrow)
+  n.vec = n.train.vec + n.test.vec
+  n_label = length(X.train.list)
+  
+  X.train.mean = lapply(X.train.list, colMeans)
+  X.train.list1 = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
+  
+  # K.list = lapply(1:n_label, function(l) getK(Y.train.list[[l]], X.train.list1[[l]], threshold)$K)
   X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list1[[ix]], K = K.list[[ix]], plot = F))
   
   H.list = lapply(X2U.list, function(list) list$H)
