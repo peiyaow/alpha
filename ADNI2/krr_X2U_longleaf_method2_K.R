@@ -127,7 +127,7 @@ mse.ridge.X.class = sum(mse.ridge.X.class.vec*n.test.vec)/sum(n.test.vec)
 
 # ------------------------------- ALPHA -----------------------------------------
 # calculate K
-X2U.list = lapply(1:n_label, function(ix) X2U1(X.train.list[[ix]], plot = T))
+X2U.list = lapply(1:n_label, function(ix) X2U1(X.train.list[[ix]], plot = F))
 
 H.list = lapply(X2U.list, function(list) list$H)
 P.list = lapply(X2U.list, function(list) list$P)
@@ -145,15 +145,15 @@ L.list =  lapply(X2U.list, function(list) matrix(list$L[-1,], ncol = p))
 coef.list2 = lapply(L.list, function(L) as.matrix(L%*%as.matrix(ml.lm.WLS$coefficients[-1])))
 coef.list.all = lapply(1:n_label, function(ix) cbind(coef.list[[ix]], coef.list2[[ix]]))
 
-p_value.list = lapply(1:n_label, function(ix) pt(-abs(coef.list.all[[ix]][,2] - coef.list.all[[ix]][,1] )/(sqrt(diag(L.list[[ix]]%*%solve(t(X.train)%*%diag(w)%*%X.train)%*%t(L.list[[ix]])))*sigma(ml.lm.WLS)), df = ml.lm.WLS$df.residual))
+p_value.list = lapply(1:n_label, function(ix) pt(-abs(coef.list.all[[ix]][,2] - coef.list.all[[ix]][,1] )/(sqrt(diag(L.list[[ix]]%*%solve(t(X.train.WLS)%*%diag(w)%*%X.train.WLS)%*%t(L.list[[ix]])))*sigma(ml.lm.WLS)), df = ml.lm.WLS$df.residual))
 
-K.list = lapply(1:n_label, function(ix) screenK(p_value.list[[ix]], forward = F))
+K.list = lapply(1:n_label, function(ix) screenK(p_value.list[[ix]], forward = T))
 # --------------
 
-# # calculate threshold
-# Y_concat = do.call(c, Y.train.list)
-# X_concat = do.call(rbind, X.train.list)
-# threshold = sort(abs(cor(Y_concat, X_concat)), decreasing = T)[1]
+# calculate threshold
+Y_concat = do.call(c, Y.train.list)
+X_concat = do.call(rbind, X.train.list)
+threshold = sort(abs(cor(Y_concat, X_concat)), decreasing = T)[1]
 
 X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
 X.test.list = lapply(label.level, function(l) X.test[label.test == l,])
