@@ -150,10 +150,10 @@ p_value.list = lapply(1:n_label, function(ix) pt(-abs(coef.list.all[[ix]][,2] - 
 K.list = lapply(1:n_label, function(ix) screenK(p_value.list[[ix]], forward = T))
 # --------------
 
-# calculate threshold
-Y_concat = do.call(c, Y.train.list)
-X_concat = do.call(rbind, X.train.list)
-threshold = sort(abs(cor(Y_concat, X_concat)), decreasing = T)[1]
+## calculate threshold
+# Y_concat = do.call(c, Y.train.list)
+# X_concat = do.call(rbind, X.train.list)
+# threshold = sort(abs(cor(Y_concat, X_concat)), decreasing = T)[1]
 
 X.train.list = lapply(label.level, function(l) X.train[label.train == l,])
 X.test.list = lapply(label.level, function(l) X.test[label.test == l,])

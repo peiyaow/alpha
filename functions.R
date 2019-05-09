@@ -54,7 +54,8 @@ X2U1 = function(X, K=50, plot = F){
   return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
-X2U2 = function(X, K=NULL, plot = F){ # estimate the factors give K
+X2U2 = function(X, K=NULL, plot = F){ 
+  # estimate the factors given K
   n = nrow(X)
   p = floor(ncol(X)/2)
   PCA.res = eigen(X%*%t(X)/n)
@@ -155,19 +156,64 @@ FnU = function(X0, x, F0, K){
   return(list(F0.new = F0.new, Fx = Fx, Ux = Ux))
 }
 
-screenK = function(p_values, forward = T){
+FnU.svd = function(X, L){
+  # X: standardized testing data (subtracting mean from X.train) 
+  # L: loading matrix estimated from training data
+  # Return F and U for testing data using svd
+  n = nrow(X)
+  if (nrow(L) == 0){ # no factors identified
+    F1.test = as.matrix(rep(1, n))
+    U.test = X
+  }else{
+    res.svd = svd(L%*%t(X))
+    F.test = sqrt(n)*res.svd$v%*%t(res.svd$u) # not including all 1 column
+    F1.test = cbind(1, F.test) # including all 1 column
+    U.test = X - F.test%*%L
+  }
+  return(list(F_ = F1.test, U = U.test))
+}
+
+screenK = function(p_values, forward = T, a = 0.05){
+  # use forward/backward procedure to determine the number of K no multiple correction
+  # a: significance level
   if(forward){
+    # forward
     K = 0
-    while (K < length(p_values) & p_values[K+1] < 0.05){
+    while (K < length(p_values) & p_values[K+1] < a){
       K = K+1
     }
   }else{
+    # backward
     K = length(p_values)
-    while (p_values[K]> 0.05){
+    while (p_values[K] > a){
       K = K-1
       if(K == 0){
         break
       }
+    }
+  }
+  return(K)
+}
+
+compute.mse = function(Y.test.list, Yhat.test.list){
+  n.test.vec = sapply(Y.test.list, function(Y) length(Y))
+  mse.vec = sapply(1:length(Y.test.list), function(ix) mean((Yhat.test.list[[ix]]-Y.test.list[[ix]])^2))
+  mse = sum(mse.vec*n.test.vec)/sum(n.test.vec)
+  return(list(mse.vec = mse.vec, mse = mse))
+}
+
+screenK.bonferroni = function(p_values, a = 0.05){
+  # use forward procedure to determine the number of K using bonferroni corrected procedure
+  # a: significance level
+  K = 0
+  while (K < length(p_values)){
+#    print(K+1)
+#    print(a/(K+1))
+#    print(p_values[1:(K+1)] < a/(K+1))
+    if (prod(p_values[1:(K+1)] < a/(K+1))){
+      K = K+1
+    }else{
+      break
     }
   }
   return(K)
@@ -204,7 +250,7 @@ predict_method1_single = function(X.train.list, Y.train.list, x, l){
   
   #---------------- get weights from OLS.U ----------------
   ml.lm.U = lm(Y~., data = data.U.train)  
-  ix.vec = c(0,cumsum(n.train.vec))
+  ix.vec = c(0, cumsum(n.train.vec))
   sigma2 = sapply(1:n_label, function(ix) sum((ml.lm.U$residuals[(ix.vec[ix]+1):ix.vec[ix+1]])^2)/n.train.vec[ix])
   w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])))
   
@@ -1235,6 +1281,7 @@ cv.select_threshold.method2 = function(threshold.vec, X.train.list, Y.train.list
   threshold = threshold.vec[which.min(mse.vec)]
   return(list(threshold = threshold, mse.vec = mse.vec))
 }
+
 
 
 
