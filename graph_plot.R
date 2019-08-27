@@ -72,7 +72,8 @@ coef.list.all = lapply(1:n_label, function(ix) cbind(coef.list[[ix]], coef.list2
 
 p_value.list = lapply(1:n_label, function(ix) pt(-abs(coef.list.all[[ix]][,2] - coef.list.all[[ix]][,1] )/(sqrt(diag(L.list[[ix]]%*%solve(t(X.WLS)%*%diag(w)%*%X.WLS)%*%t(L.list[[ix]])))*sigma(ml.lm.WLS)), df = ml.lm.WLS$df.residual))
 
-K.list = lapply(1:n_label, function(ix) screenK(p_value.list[[ix]], forward = T))
+# bonferroni K
+K.list = lapply(1:n_label, function(ix) screenK.bonferroni(p_value.list[[ix]])) # K after screening
 
 X2U.list = lapply(1:n_label, function(ix) X2U2(X.list[[ix]], K = K.list[[ix]], plot = F))
 
@@ -84,9 +85,48 @@ F.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
 PY.list = lapply(1:n_label, function(ix) P.list[[ix]]%*%Y.list[[ix]])
 HY.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.list[[ix]])
 
+L.list = lapply(X2U.list, function(list) matrix(list$L[-1,], ncol = p)) 
+data.F.list = lapply(1:n_label, function(ix) data.frame(Y = Y.list[[ix]], 
+                                                              F.list[[ix]][,-1]))
+ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.list[[l]]))
+# OLS.U
+U = do.call(rbind, U.list)
+HY = do.call(c, HY.list)
+data.U = data.frame(Y = HY, U)
+ml.lm.U = lm(Y~., data = data.U)
+
+# compute weights from OLS.F and OLS.U 
+Yhat.lm.U.list = lapply(1:n_label, function(ix) ml.lm.U$fitted.values[(ix.vec[ix]+1):ix.vec[ix+1]] 
+                              + ml.lm.F.list[[ix]]$fitted.values)
+sigma2 = sapply(1:n_label, function(l) mean((Y.list[[l]] - Yhat.lm.U.list[[l]])^2))
+# new weights for U regression
+w = do.call(c, lapply(1:n_label, function(l) rep(1/(sigma2[l]*(1-K.list[[l]]/n.vec[l])), n.vec[l]))) 
+
+# WLS
+OLS.WLS.U = lm(Y~., data = data.U, weight = w)
+ridge.WLS.U = cv.glmnet(x = U, y = HY, weights = w, alpha = 0)
+beta_u = OLS.WLS.U$coefficients[-1]
+beta_u = coef(ridge.WLS.U, s=ridge.WLS.U$lambda.min)[-1]
+
+lambda = 0.1
+beta.NC = solve(t(L.list[[1]])%*%L.list[[1]] + lambda*diag(p))%*%t(L.list[[1]])*ml.lm.F.list[[1]]$coefficients[-1]
+
+beta.AD = solve(t(L.list[[5]])%*%L.list[[5]] + lambda*diag(p))%*%t(L.list[[5]])*ml.lm.F.list[[5]]$coefficients[-1]
+
+beta.data = data.frame(beta.NC, beta.AD, beta_u)
+pairs(beta.data)
+plot(beta.NC)
+plot(beta.AD)
 
 
+plot(beta_u, beta.NC)
+plot(beta_u, beta.AD)
+plot(beta.NC, beta.AD)
 
+par(mfrow = c(3,1))
+hist(beta.NC)
+hist(beta.AD)
+hist(beta_u)
 
 
 # plot PY and HY

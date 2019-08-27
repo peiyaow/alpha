@@ -16,24 +16,6 @@ require(methods)
 source("/nas/longleaf/home/peiyao/alpha/functions.R")
 load("/nas/longleaf/home/peiyao/alpha/data/ADNI2_clean3.RData")
 
-# X = X[-c(770),]
-# label = label[-c(770)]
-# Y = Y[-c(770)]
-# 
-# X = X[label!=4,]
-# Y = Y[label!=4]
-# label = label[label!=4]
-# label = droplevels(label)
-# 
-# X = X[label!=3,]
-# Y = Y[label!=3]
-# label = label[label!=3]
-# label = droplevels(label)
-# 
-# X = X[Y < 37,]
-# label = label[Y<37]
-# Y = Y[Y<37]
-
 n = dim(X)[1]
 p = dim(X)[2]
 
