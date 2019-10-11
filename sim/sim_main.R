@@ -281,7 +281,7 @@ for (kk in 1: 50){
   
   
   # high-d penalized
-  if (n*3 > p){
+  if (sum(w.HD < 0) > 0){
     mse.WLS.HD.list = compute.mse(list(NA, NA, NA), list(NA, NA, NA))
     mse.ridge.WLS.HD.list = compute.mse(list(NA, NA, NA), list(NA, NA, NA))
     mse.EN.WLS.HD.list = compute.mse(list(NA, NA, NA), list(NA, NA, NA))
