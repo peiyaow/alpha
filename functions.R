@@ -28,7 +28,6 @@ X2U = function(X, K=50, plot = F){
 
 X2U1 = function(X, K=50, plot = F){
   n = nrow(X)
-  #  p = ncol(X)
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
   if (plot){
@@ -38,29 +37,29 @@ X2U1 = function(X, K=50, plot = F){
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
   }
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
-  F_ = cbind(1,PCA.res$vectors[,1:K]*sqrt(n))
+  F_ = cbind(1, PCA.res$vectors[,1:K]*sqrt(n))
   F1 = F_[,1]
-  #F1 = PCA.res$vectors[,1]*sqrt(n)
-  #F2 = PCA.res$vectors[,2]*sqrt(n)
   F2 = PCA.res$vectors[,1:2]*sqrt(n) # first 2 factors
   F_res = PCA.res$vectors[,3:n]*sqrt(n) # other factors
   P = F_%*%solve(t(F_)%*%F_)%*%t(F_)
+  P0 = F_[,-1]%*%solve(t(F_[,-1])%*%F_[,-1])%*%t(F_[,-1])
   P1 = F1%*%solve(t(F1)%*%F1)%*%t(F1)
   H = diag(n) - P
+  H0 = diag(n) - P0
+  U = H%*%X
   L = solve(t(F_)%*%F_)%*%t(F_)%*%X
   L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
   L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
-  #return(list(H = H, P = P, K = K, F_ = F_, F2 = F2, F1 = F1, L = L, L2 = L2))
-  return(list(H = H, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
+  return(list(U = U, H = H, H0 = H0, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
-X2U2 = function(X, K=NULL, plot = F){ 
+X2U2 = function(X, K=NULL, Plot = F){ 
   # estimate the factors given K
   n = nrow(X)
   p = floor(ncol(X)/2)
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
-  if (plot){
+  if (Plot){
     par(mfrow=c(4,1))
     plot(eigen_vals[1:(p-1)])
     plot(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
