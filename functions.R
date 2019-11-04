@@ -28,6 +28,7 @@ X2U = function(X, K=50, plot = F){
 
 X2U1 = function(X, K=50, plot = F){
   n = nrow(X)
+#  K = n-2
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
   if (plot){
@@ -50,7 +51,7 @@ X2U1 = function(X, K=50, plot = F){
   L = solve(t(F_)%*%F_)%*%t(F_)%*%X
   L2 = solve(t(F2)%*%F2)%*%t(F2)%*%X
   L_res = solve(t(F_res)%*%F_res)%*%t(F_res)%*%X
-  return(list(U = U, H = H, H0 = H0, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
+  return(list(vals = eigen_vals, U = U, H = H, H0 = H0, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
 X2U2 = function(X, K=NULL, Plot = F){ 

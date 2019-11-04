@@ -1,5 +1,33 @@
 library(MASS)
 library(POET)
+library(pracma)
+
+generateX = function(K = 3, p = 200, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3){
+  # K: number of factors
+  # spike: K spiked eigenvalues
+  # d: dilute parameter for L2
+  # du: dilute parameter for Sigma_U
+  
+  L1 = randortho(K, type = "orthonormal")
+  TT = d*matrix(runif((p-K)*K), nrow = K)
+  L2 = L1%*%TT
+  
+  # explode L1 by sqrt(spike)
+  L1 = t(t(L1)*sqrt(spike))
+  
+  L = cbind(L1, L2) # K by p
+  SigmaX = t(L)%*%L
+  
+  Sigma_U = du*diag(p)
+  
+  F1 = mvrnorm(n, rep(0, K), diag(K))
+  U1 = mvrnorm(n, rep(0, p), Sigma_U)
+  
+  X1 = F1%*%L + U1
+  return(list(X = X1, F = F1, U = U1, L = L, SigmaU = Sigma_U, SigmaX = SigmaX))
+}
+
+
 
 simulateFnU.rd0 = function(n, p, K, mu_B, Sigma_B, Sigma_U){
   L = t(mvrnorm(p, mu_B, Sigma_B))
@@ -144,7 +172,8 @@ POET = function (Y, K = -Inf, C = -Inf, thres = "soft", matrix = "cor")
   }
   else {
     uhat = Y
-    rate = sqrt((log(p))/n)
+#    rate = sqrt((log(p))/n)
+    rate = 1/sqrt(p) + sqrt((log(p))/n)
     Lowrank = matrix(0, p, p)
     LamPCA = matrix(NA, nrow = p, ncol = n)
   }

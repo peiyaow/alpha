@@ -11,8 +11,8 @@ library(glmnet)
 require(methods)
 # library(POET)
 
-#path = "~/Documents/GitHub/alpha/"
-path = "/nas/longleaf/home/peiyao/alpha/"
+path = "~/Documents/GitHub/alpha/"
+# path = "/nas/longleaf/home/peiyao/alpha/"
 
 source(paste0(path, "functions.R"))
 source(paste0(path, "sim_func.R"))
@@ -28,16 +28,17 @@ setwd(dir_name)
 
 for (kk in 1: 50){
   set.seed(seeds[kk])
-  n = 200
+  n = 80
   p = para$p
   n_label = 3
-  beta_F.list = lapply(1:n_label, function(ix) c(rep(ix, 5), rep(0, p-5)))
-  # beta_F.list = lapply(1:n_label, function(ix) c(rep(1, 5), rep(0, p-5)))
+  beta_F.list = lapply(1:n_label, function(ix) c(rep(sqrt(ix), 5)/2, rep(0, p-5)))
+# beta_F.list = lapply(1:n_label, function(ix) c(rep(2, 5), rep(0, p-5)))
+#  beta_F.list = lapply(1:n_label, function(ix) rep(.01, p))
   
   sigma.vec = para$sigma.vec
   
-  beta_U = c(c(rep(para$beta, 5), rep(0, p-5)))
-  # beta_U = c(rep(0, 5), rep(para$beta, 5), rep(0, p-10)))
+  beta_U = c(c(rep(1, 5), rep(0, p-5)))
+  # beta_U = c(rep(0, 5), rep(para$beta, 5), rep(0, p-10))
   
   n.train.vec = c(n, n, n)
   n.test.vec = c(n, n, n)
@@ -46,7 +47,8 @@ for (kk in 1: 50){
   label.level = levels(label.test)
   
   #sim_FnU.list = lapply(1:n_label, function(ix) simulateFnU0(n, p, K.list[[ix]], mu_B.list[[ix]], Sigma_B.list[[ix]], Sigma_U))
-  sim_FnU.list = lapply(1:n_label, function(ix) simulateFnU(n, p, K0.list[[ix]], L0.list[[ix]], Sigma_U))
+  blow_factor = c(1.27, 1, 1)*5
+  sim_FnU.list = lapply(1:n_label, function(ix) simulateFnU(n, p, K0.list[[ix]], L0.list[[ix]]*blow_factor[ix], Sigma_U))
   
   
   # true loading matrix
@@ -67,15 +69,15 @@ for (kk in 1: 50){
   Y.test.list = lapply(1:n_label, function(ix) tY.test.list[[ix]] + rnorm(n, sd = sigma.vec[ix]))
   
   # -------------------------------- diagnostic ------------------------------------
-  # sapply(1:n_label, function(ix) var(F.list[[ix]]%*%gamma.list[[ix]]))
-  # sapply(1:n_label, function(ix) var(U.list[[ix]]%*%beta_U))
-  # sapply(1:n_label, function(ix) var(tY.train.list[[ix]]))
-  # sapply(1:n_label, function(ix) var(Y.train.list[[ix]]))
-  # 
-  # sapply(1:n_label, function(ix) var(F.test.list[[ix]]%*%gamma.list[[ix]]))
-  # sapply(1:n_label, function(ix) var(U.test.list[[ix]]%*%beta_U))
-  # sapply(1:n_label, function(ix) var(tY.test.list[[ix]]))
-  # sapply(1:n_label, function(ix) var(Y.test.list[[ix]]))
+  sapply(1:n_label, function(ix) var(F.list[[ix]]%*%gamma.list[[ix]]))
+  sapply(1:n_label, function(ix) var(U.list[[ix]]%*%beta_U))
+  sapply(1:n_label, function(ix) var(tY.train.list[[ix]]))
+  sapply(1:n_label, function(ix) var(Y.train.list[[ix]]))
+
+  sapply(1:n_label, function(ix) var(F.test.list[[ix]]%*%gamma.list[[ix]]))
+  sapply(1:n_label, function(ix) var(U.test.list[[ix]]%*%beta_U))
+  sapply(1:n_label, function(ix) var(tY.test.list[[ix]]))
+  sapply(1:n_label, function(ix) var(Y.test.list[[ix]]))
   # ---------------------------------------------------------------------------------
   
   X.train = do.call(rbind, X.train.list)
@@ -228,7 +230,9 @@ for (kk in 1: 50){
   mse.EN.OLS.list = compute.mse(Y.test.list, Yhat.test.EN.OLS.list)
   mse.lasso.OLS.list = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
   
-  
+  mse.lasso.OLS.list[[1]]
+  mse.lasso.X.class.vec
+  mse.lasso.global.vec
   # WLS
   # LD estimation for sigma
   sigma2.LD = sapply(1:n_label, function(ix) mean((HY.train.list[[ix]]-HYhat.OLS.U[(ix.vec[ix]+1):ix.vec[ix+1]])^2))
