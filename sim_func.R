@@ -2,18 +2,60 @@ library(MASS)
 library(POET)
 library(pracma)
 
-generateX = function(K = 3, p = 200, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3){
+FactorModelPara = function(n = 100, p = 200, K = 3, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3, rrho = 0.1){
   # K: number of factors
   # spike: K spiked eigenvalues
   # d: dilute parameter for L2
   # du: dilute parameter for Sigma_U
   
-  L1 = randortho(K, type = "orthonormal")
+  R = matrix(, nrow = K, ncol = K)
+  for (i in 1:K){
+    for (j in 1:K){
+      R[i,j] = rrho^(abs(i-j))
+    }
+  }
+  LtL = R*sqrt(spike)%*%t(sqrt(spike))
+  eigen.res = eigen(LtL)
+  V = eigen.res$vectors
+  Q = randortho(K, type = "orthonormal")
+  L1 = Q%*%sqrt(diag(eigen.res$values))%*%t(V)
+  
+  TT = matrix(runif((p-K)*K, min = -d, max = d), nrow = K)
+  L2 = Q%*%TT
+  
+  L = cbind(L1, L2) # K by p
+  SigmaX = t(L)%*%L
+  
+  Sigma_U = du*diag(p)
+  
+  return(list(L = L, SigmaU = Sigma_U, SigmaX = SigmaX))
+}
+
+generateX = function(n = 100, p = 200, K = 3, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3, rrho = 0.1){
+  # K: number of factors
+  # spike: K spiked eigenvalues
+  # d: dilute parameter for L2
+  # du: dilute parameter for Sigma_U
+  
+  R = matrix(, nrow = K, ncol = K)
+  for (i in 1:K){
+    for (j in 1:K){
+      R[i,j] = rrho^(abs(i-j))
+    }
+  }
+  LtL = R*sqrt(spike)%*%t(sqrt(spike))
+  svd_res = svd(LtL)
+  D = sqrt(diag(svd_res$d))%*%t(svd_res$v)
+  Q = svd_res$u #Q
+  if (rrho == 0){
+    Q = randortho(K, type = "orthonormal")
+  }
+  
   TT = d*matrix(runif((p-K)*K), nrow = K)
-  L2 = L1%*%TT
+  L2 = Q%*%TT
   
   # explode L1 by sqrt(spike)
-  L1 = t(t(L1)*sqrt(spike))
+  L1 = Q%*%D
   
   L = cbind(L1, L2) # K by p
   SigmaX = t(L)%*%L
@@ -26,6 +68,31 @@ generateX = function(K = 3, p = 200, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3){
   X1 = F1%*%L + U1
   return(list(X = X1, F = F1, U = U1, L = L, SigmaU = Sigma_U, SigmaX = SigmaX))
 }
+
+# generateX = function(K = 3, p = 200, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3){
+#   # K: number of factors
+#   # spike: K spiked eigenvalues
+#   # d: dilute parameter for L2
+#   # du: dilute parameter for Sigma_U
+#   
+#   L1 = randortho(K, type = "orthonormal")
+#   TT = d*matrix(runif((p-K)*K), nrow = K)
+#   L2 = L1%*%TT
+#   
+# # explode L1 by sqrt(spike)
+#   L1 = t(t(L1)*sqrt(spike))
+#   
+#   L = cbind(L1, L2) # K by p
+#   SigmaX = t(L)%*%L
+#   
+#   Sigma_U = du*diag(p)
+#   
+#   F1 = mvrnorm(n, rep(0, K), diag(K))
+#   U1 = mvrnorm(n, rep(0, p), Sigma_U)
+#   
+#   X1 = F1%*%L + U1
+#   return(list(X = X1, F = F1, U = U1, L = L, SigmaU = Sigma_U, SigmaX = SigmaX))
+# }
 
 
 
