@@ -1,17 +1,19 @@
 # ---------------------- reading shell command --------------------- 
-args = (commandArgs(TRUE))
+#args = (commandArgs(TRUE))
 # cat(args, "\n")
-for (i in 1:length(args)) {
-  eval(parse(text = args[[i]]))
-}
+#for (i in 1:length(args)) {
+#  eval(parse(text = args[[i]]))
+#}
 # ------------------------------------------------------------------ 
 
 library(caret)
 library(glmnet)
 require(methods)
+# setwd("~/Documents/GitHub/alpha/")
 setwd("/nas/longleaf/home/peiyao/alpha/")
-source("functions.R")
+source("./function/main_function.R")
 load("./data/ADNI2_clean3.RData")
+setwd("/pine/scr/p/e/peiyao/alpha/real\ data/WLS_SVD/")
 n = dim(X)[1]
 p = dim(X)[2]
 
