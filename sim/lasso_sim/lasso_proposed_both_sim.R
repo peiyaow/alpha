@@ -204,3 +204,4 @@ for (s in seq(0, 40, length.out = 25)){
   }
 }
 
+save(DD, file = "DD.RData")

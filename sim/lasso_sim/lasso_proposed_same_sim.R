@@ -203,3 +203,5 @@ for (s in seq(0, 40, length.out = 25)){
     DD = rbind(DD, c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list[[2]]))
   }
 }
+
+save(DD, file = "DD.RData")
