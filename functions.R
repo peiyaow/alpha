@@ -173,6 +173,25 @@ FnU.svd = function(X, L){
   return(list(F_ = F1.test, U = U.test))
 }
 
+FnU.svd1 = function(X, L){
+  # X: standardized testing data (subtracting mean from X.train) 
+  # L: loading matrix estimated from training data
+  # Return F and U for testing data using svd
+  n = nrow(X)
+  p = ncol(X)
+  if (nrow(L) == 0){ # no factors identified
+    F1.test = as.matrix(rep(1, n))
+    U.test = X
+  }else{
+    res.svd = svd(L%*%t(X))
+    F.test = sqrt(n)*res.svd$v%*%t(res.svd$u) # not including all 1 column
+    FL = res.svd$v%*%solve(t(res.svd$v)%*%res.svd$v)%*%t(res.svd$v)%*%X
+    U.test = (diag(n) - res.svd$v%*%solve(t(res.svd$v)%*%res.svd$v)%*%t(res.svd$v))%*%X
+    F1.test = cbind(1, F.test) # including all 1 column
+  }
+  return(list(F_ = F1.test, U = U.test, FL = FL))
+}
+
 screenK = function(p_values, forward = T, a = 0.05){
   # use forward/backward procedure to determine the number of K no multiple correction
   # a: significance level

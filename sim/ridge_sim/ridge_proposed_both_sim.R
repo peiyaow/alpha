@@ -54,7 +54,6 @@ label.level = levels(label.test)
 
 ############################################################
 DD = matrix(, nrow = 0, ncol = 3)
-DD = matrix(, nrow = 0, ncol = 3)
 for (s in seq(0, 40, length.out = 25)){
   print(s)
   for (ii in 1:80){
