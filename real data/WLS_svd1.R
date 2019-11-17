@@ -1,9 +1,9 @@
 # ---------------------- reading shell command --------------------- 
-#args = (commandArgs(TRUE))
-# cat(args, "\n")
-#for (i in 1:length(args)) {
-#  eval(parse(text = args[[i]]))
-#}
+args = (commandArgs(TRUE))
+cat(args, "\n")
+for (i in 1:length(args)) {
+ eval(parse(text = args[[i]]))
+}
 # ------------------------------------------------------------------ 
 
 library(caret)
@@ -13,9 +13,11 @@ require(methods)
 setwd("/nas/longleaf/home/peiyao/alpha/")
 source("./function/main_function.R")
 load("./data/ADNI2_clean3.RData")
-setwd("/pine/scr/p/e/peiyao/alpha/real\ data/WLS_SVD1/")
+setwd("/pine/scr/p/e/peiyao/alpha/real_data/WLS_SVD1/")
 n = dim(X)[1]
 p = dim(X)[2]
+
+set.seed(myseed)
 
 ix.train = unlist(createDataPartition(label, times = 1, p = 3/4))
 ix.test = (1:n)[-ix.train]
@@ -126,7 +128,7 @@ mse.EN.WLS = sum(mse.EN.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # WLS lasso
 ml.lasso.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 1, 
-#                         weights = w
+                         weights = w
                          )
 Yhat.lasso.WLS.test = lapply(1:n_label, function(ix) predict(ml.lasso.WLS, s=ml.lasso.WLS$lambda.min, newx = X.test.list[[ix]]))
 mse.lasso.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.lasso.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))

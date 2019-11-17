@@ -1,10 +1,10 @@
-#---------------------- reading shell command ---------------------
+# ---------------------- reading shell command --------------------- 
 args = (commandArgs(TRUE))
 cat(args, "\n")
 for (i in 1:length(args)) {
  eval(parse(text = args[[i]]))
 }
-#------------------------------------------------------------------
+# ------------------------------------------------------------------ 
 
 library(caret)
 library(glmnet)
@@ -13,7 +13,7 @@ require(methods)
 setwd("/nas/longleaf/home/peiyao/alpha/")
 source("./function/main_function.R")
 load("./data/ADNI2_clean3.RData")
-setwd("/pine/scr/p/e/peiyao/alpha/real_data/WLS_SVD/")
+setwd("/pine/scr/p/e/peiyao/alpha/real_data/OLS_SVD/")
 
 n = dim(X)[1]
 p = dim(X)[2]
@@ -105,7 +105,7 @@ w = do.call(c, lapply(1:n_label, function(ix) rep(1/sigma2[ix], n.train.vec[ix])
 
 # WLS lm
 ml.lm.WLS = lm(Y~., data = data.train.WLS, 
-               weights = w
+               #               weights = w
 )
 Yhat.lm.WLS.test = lapply(1:n_label, function(ix) predict(ml.lm.WLS, new = data.frame(X.test.list[[ix]])))
 mse.lm.WLS.vec = sapply(1:n_label, function(ix) mean((Yhat.lm.WLS.test[[ix]]+Y.train.mean[[ix]]-Y.test.list[[ix]])^2))
@@ -113,7 +113,7 @@ mse.lm.WLS = sum(mse.lm.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # WLS ridge
 ml.ridge.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0, 
-                         weights = w
+                         #                         weights = w
 )
 Yhat.ridge.WLS.test = lapply(1:n_label, function(ix) predict(ml.ridge.WLS, s=ml.ridge.WLS$lambda.min, newx = X.test.list[[ix]]))
 mse.ridge.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.ridge.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
@@ -121,15 +121,15 @@ mse.ridge.WLS = sum(mse.ridge.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # WLS EN
 ml.EN.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 0.5, 
-                      weights = w
+                      #                      weights = w
 )
 Yhat.EN.WLS.test = lapply(1:n_label, function(ix) predict(ml.EN.WLS, s=ml.EN.WLS$lambda.min, newx = X.test.list[[ix]]))
 mse.EN.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.EN.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
 mse.EN.WLS = sum(mse.EN.WLS.vec*n.test.vec)/sum(n.test.vec)
 
 # WLS lasso
-ml.lasso.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 1, 
-                         weights = w
+ml.lasso.WLS = cv.glmnet(x=X.train.WLS, y=Y.train.WLS, alpha = 1,
+                         #                         weights = w
 )
 Yhat.lasso.WLS.test = lapply(1:n_label, function(ix) predict(ml.lasso.WLS, s=ml.lasso.WLS$lambda.min, newx = X.test.list[[ix]]))
 mse.lasso.WLS.vec = sapply(1:n_label, function(ix) mean(((Yhat.lasso.WLS.test[[ix]]+Y.train.mean[[ix]])-(Y.test.list[[ix]]))^2))
@@ -163,7 +163,7 @@ L.list = lapply(X2U.list, function(list) matrix(list$L[-1,], ncol = p))
 F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
 U.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$U)
 
-FnU.test.list = lapply(1:n_label, function(ix) FnU.svd(X.test.list[[ix]], L.list[[ix]])) 
+FnU.test.list = lapply(1:n_label, function(ix) FnU.svd1(X.test.list[[ix]], L.list[[ix]])) 
 F.test.list = lapply(FnU.test.list, function(list) list$F_) 
 U.test.list = lapply(FnU.test.list, function(list) list$U)
 
@@ -178,13 +178,13 @@ HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]]
 HY.train = do.call(c, HY.train.list)
 
 ridge.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0, 
-                        weights = w
+                        #                        weights = w
 )
 EN.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0.5, 
-                     weights = w
+                     #                     weights = w
 )
 lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1, 
-                        weights = w 
+                        #                        weights = w 
 )
 
 HYhat.test.ridge.OLS.list = lapply(1:n_label, function(ix) predict(ridge.OLS.U, s=ridge.OLS.U$lambda.min, U.test.list[[ix]]))
