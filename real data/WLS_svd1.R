@@ -9,7 +9,7 @@ for (i in 1:length(args)) {
 library(caret)
 library(glmnet)
 require(methods)
-setwd("~/Documents/GitHub/alpha/")
+setwd("/nas/longleaf/home/peiyao/alpha/")
 source("functions.R")
 load("./data/ADNI2_clean3.RData")
 n = dim(X)[1]
