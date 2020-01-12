@@ -4,22 +4,21 @@ require(methods)
 # path = "~/Documents/GitHub/alpha/"
 path = "/nas/longleaf/home/peiyao/alpha/"
 
-source(paste0(path, "functions.R"))
-source(paste0(path, "sim_func.R"))
+source(paste0(path, "/function/main_function.R"))
+source(paste0(path, "/function/sim_function.R"))
 
-#set.seed(706)
+set.seed(706)
 
 p = 200
 n = 100
 K = 3
 
-p_share = 5 # ridge 80 lasso 5
+p_share = 80 # ridge 80 lasso 5
 n_label = 3
 si = 2
 
 # control parameter for beta
-# s = 1 # unique
-s = 20
+s = 40 # unique
 h = 1 # share
 
 ds = sqrt(p) # sqrt(p) multiplier parameter for spike L 
@@ -37,9 +36,19 @@ spike1 = spike_factor1 * ds
 spike2 = spike_factor2 * ds
 spike3 = spike_factor3 * ds
 
-para1 = FactorModelPara(n, p, K, spike = spike1, d, du = spike1[K]*rho, rrho)
-para2 = FactorModelPara(n, p, K, spike = spike2, d, du = spike2[K]*rho, rrho)
-para3 = FactorModelPara(n, p, K, spike = spike3, d, du = spike3[K]*rho, rrho)
+du = (spike1[K]*rho+spike2[K]*rho + spike3[K]*rho)/3
+
+# para1 = FactorModelPara(n, p, K, spike = spike1, d, du = spike1[K]*rho, rrho)
+# para2 = FactorModelPara(n, p, K, spike = spike2, d, du = spike2[K]*rho, rrho)
+# para3 = FactorModelPara(n, p, K, spike = spike3, d, du = spike3[K]*rho, rrho)
+
+para1 = FactorModelPara(n, p, K, spike = spike1, d, du = du, rrho)
+para2 = FactorModelPara(n, p, K, spike = spike2, d, du = du, rrho)
+para3 = FactorModelPara(n, p, K, spike = spike3, d, du = du, rrho)
+
+u1 = 1
+u2 = 2
+u3 = 3
 
 L1 = para1$L
 L2 = para2$L
@@ -54,13 +63,13 @@ label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.
 label.level = levels(label.test)
 
 ############################################################
-DD = matrix(, nrow = 0, ncol = 3)
-for (s in seq(0, 40, length.out = 25)){
+DD = matrix(, nrow = 0, ncol = 4)
+for (s in seq(0, 3, by = 0.1)){
   print(s)
-  for (ii in 1:80){
-    beta1_unique = c(1, 1, -1)*s*1/sqrt(p)
-    beta2_unique = c(1, -1, 1)*s*1/sqrt(p)
-    beta3_unique = c(-1, 1, 1)*s*1/sqrt(p)
+  for (ii in 1:50){
+    beta1_unique = c(1, 1, -1)*s
+    beta2_unique = c(1, -1, 1)*s
+    beta3_unique = c(-1, 1, 1)*s
     
     beta1_unique = c(beta1_unique, rep(0, p-K))
     beta2_unique = c(beta2_unique, rep(0, p-K))
@@ -72,8 +81,6 @@ for (s in seq(0, 40, length.out = 25)){
     gamma3 = L3%*%beta3_unique
     
     beta_share = c(rep(0, K), rep(h, p_share), rep(-h, p_share), rep(0, p - 2*p_share - K))
-    # beta_share = c(rep(h, K), rep(h, p_share), rep(-h, p_share), rep(0, p - 2*p_share - K))
-    # beta_share = c(rep(h, K), rep(0, p - K))
     
     F1 = mvrnorm(n, rep(0, K), diag(K))
     F2 = mvrnorm(n, rep(0, K), diag(K))
@@ -95,9 +102,9 @@ for (s in seq(0, 40, length.out = 25)){
     eps2 = rnorm(n, sd = sigma.vec[2])
     eps3 = rnorm(n, sd = sigma.vec[3])
     
-    Y1 = F1%*%gamma1 + U1%*%beta_share + eps1
-    Y2 = F2%*%gamma2 + U2%*%beta_share + eps2
-    Y3 = F3%*%gamma3 + U3%*%beta_share + eps3
+    Y1 = u1 + F1%*%gamma1 + U1%*%beta_share + eps1
+    Y2 = u2 + F2%*%gamma2 + U2%*%beta_share + eps2
+    Y3 = u3 + F3%*%gamma3 + U3%*%beta_share + eps3
     
     Y.train.list = list(Y1, Y2, Y3)
     
@@ -120,9 +127,9 @@ for (s in seq(0, 40, length.out = 25)){
     eps2 = rnorm(n, sd = sigma.vec[2])
     eps3 = rnorm(n, sd = sigma.vec[3])
     
-    Y1 = F1%*%gamma1 + U1%*%beta_share + eps1
-    Y2 = F2%*%gamma2 + U2%*%beta_share + eps2
-    Y3 = F3%*%gamma3 + U3%*%beta_share + eps3
+    Y1 = u1 + F1%*%gamma1 + U1%*%beta_share + eps1
+    Y2 = u2 + F2%*%gamma2 + U2%*%beta_share + eps2
+    Y3 = u3 + F3%*%gamma3 + U3%*%beta_share + eps3
     
     Y.test.list = list(Y1, Y2, Y3)
     
@@ -199,8 +206,52 @@ for (s in seq(0, 40, length.out = 25)){
     mse.EN.OLS.list = compute.mse(Y.test.list, Yhat.test.EN.OLS.list)
     mse.lasso.OLS.list = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
     
-    print(c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list$mse))
-    DD = rbind(DD, c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list[[2]]))
+    #------------------------------------------ALPHA-0----------------------------------------------------
+    X2U.list = lapply(1:n_label, function(ix) X2U2(X.train.list[[ix]], K = 0, plot = F))
+    H.list = lapply(X2U.list, function(list) list$H)
+    K.list = lapply(X2U.list, function(list) list$K)
+    P.list = lapply(X2U.list, function(list) list$P)
+    L.list = lapply(X2U.list, function(list) matrix(list$L[-1,], ncol = p)) 
+    
+    F.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$F_)
+    U.train.list = lapply(1:n_label, function(ix) X2U.list[[ix]]$U)
+    
+    FnU.test.list = lapply(1:n_label, function(ix) FnU.svd(X.test.list[[ix]], L.list[[ix]])) 
+    F.test.list = lapply(FnU.test.list, function(list) list$F_) 
+    U.test.list = lapply(FnU.test.list, function(list) list$U) 
+    
+    # OLS.F
+    data.F.train.list = lapply(1:n_label, function(ix) data.frame(Y = Y.train.list[[ix]], 
+                                                                  F.train.list[[ix]][,-1]))
+    ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
+    
+    # OLS.U
+    U.train = do.call(rbind, U.train.list)
+    HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
+    HY.train = do.call(c, HY.train.list)
+    
+    ridge.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0)
+    EN.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0.5)
+    lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1)
+    
+    # HYhat.test.OLS.list = lapply(1:n_label, function(ix) U.test.list[[ix]]%*%beta.OLS.U)
+    HYhat.test.ridge.OLS.list = lapply(1:n_label, function(ix) predict(ridge.OLS.U, s=ridge.OLS.U$lambda.min, U.test.list[[ix]]))
+    HYhat.test.EN.OLS.list = lapply(1:n_label, function(ix) predict(EN.OLS.U, s=EN.OLS.U$lambda.min, U.test.list[[ix]]))
+    HYhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) predict(lasso.OLS.U, s=lasso.OLS.U$lambda.min, U.test.list[[ix]]))
+    PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+    
+    # Yhat.test.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.OLS.list[[ix]])
+    Yhat.test.ridge.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.ridge.OLS.list[[ix]])
+    Yhat.test.EN.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.EN.OLS.list[[ix]])
+    Yhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.lasso.OLS.list[[ix]])
+    
+    # mse.OLS.list = compute.mse(Y.test.list, Yhat.test.OLS.list)
+    mse.ridge.OLS.list0 = compute.mse(Y.test.list, Yhat.test.ridge.OLS.list)
+    mse.EN.OLS.list0 = compute.mse(Y.test.list, Yhat.test.EN.OLS.list)
+    mse.lasso.OLS.list0 = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
+    
+    print(c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list0$mse, mse.lasso.OLS.list$mse))
+    DD = rbind(DD, c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list0[[2]], mse.lasso.OLS.list[[2]]))
   }
 }
 
