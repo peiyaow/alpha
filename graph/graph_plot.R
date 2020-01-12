@@ -19,19 +19,18 @@ library(xtable)
 
 setwd("~/Documents/GitHub/alpha/")
 load("./data/ADNI2_clean3.RData")
-source("functions.R")
-ROI_names <- read_csv("ROI_names.csv", col_names = FALSE)$X1
+source("./function/main_function.R")
+ROI_names <- read_csv("./data/ROI_names.csv", col_names = FALSE)$X1
 
 n = dim(X)[1]
 p = dim(X)[2]
 
-X.mean = apply(X, 2, mean)
-X.sd =  apply(X, 2, sd)
-X = sweep(sweep(X, 2, X.mean), 2, X.sd, "/")
+# X.mean = apply(X, 2, mean)
+# X.sd =  apply(X, 2, sd)
+# X = sweep(sweep(X, 2, X.mean), 2, X.sd, "/")
 
 label.level = levels(label)
 n_label = length(label.level)
-
 
 X.list = lapply(label.level, function(l) X[label == l,])
 Y.list = lapply(label.level, function(l) Y[label == l])

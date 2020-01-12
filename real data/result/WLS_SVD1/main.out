@@ -1,0 +1,198 @@
+myseed=2263 
+myseed=4961 
+Loading required package: lattice
+myseed=5634 
+Loading required package: lattice
+Loading required package: lattice
+myseed=8857 
+myseed=2254 
+Loading required package: lattice
+Loading required package: lattice
+Loading required package: ggplot2
+Loading required package: ggplot2
+myseed=5306myseed=4713  Loading required package: ggplot2
+
+
+myseed=8240myseed=4966 Loading required package: ggplot2
+
+ Loading required package: lattice
+Loading required package: ggplot2
+myseed=2357Loading required package: lattice
+
+Loading required package: lattice
+ 
+Loading required package: lattice
+Loading required package: lattice
+Loading required package: ggplot2
+Loading required package: ggplot2
+Loading required package: ggplot2
+Loading required package: ggplot2
+Loading required package: ggplot2
+myseed=7987 
+Loading required package: lattice
+Loading required package: ggplot2
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: Matrix
+Loading required package: methods
+Loading required package: foreach
+Loading required package: Matrix
+Loading required package: foreach
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+Loaded glmnet 2.0-10
+
+Loading required package: Matrix
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: foreach
+
+Attaching package: ‘kernlab’
+
+Loaded glmnet 2.0-10
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: methods
+Loading required package: Matrix
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: foreach
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+Loading required package: Matrix
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+Loading required package: Matrix
+Loading required package: foreach
+Loaded glmnet 2.0-10
+
+Loading required package: methods
+
+Attaching package: ‘kernlab’
+
+The following object is masked from ‘package:ggplot2’:
+
+    alpha
+
+[1] 13.82440 13.54762 13.06682
+[1] 13.91668 13.85742 12.96186
+[1] 13.90824 13.71693 13.02230
+[1] 15.21986 15.75497 14.94430
+[1] 15.68288 17.72678 14.77811
+[1] 15.84984 17.43069 15.11273
+[1] 13.61439 13.23314 12.85387
+[1] 13.83076 13.47214 13.34476
+[1] 13.86352 13.93913 13.14120
+[1] 14.10264 15.33165 13.92353
+[1] 14.27752 15.37830 14.27601
+[1] 14.23840 15.76073 14.32873
+[1] 16.65375 17.09769 17.16341
+[1] 16.77998 17.66106 17.33684
+[1] 16.59431 17.78588 17.33960
+[1] 12.69274 12.99600 12.07361
+[1] 12.66246 13.16540 12.03949
+[1] 12.68415 13.39928 12.02374
+[1] 13.99250 13.89120 13.31071
+[1] 14.22019 14.82886 13.64421
+[1] 14.24458 15.53130 13.63021
+[1] 14.20670 13.73496 13.25889
+[1] 14.45896 14.28431 13.57279
+[1] 14.48263 14.57584 13.61810
+[1] 16.16651 17.18282 15.66694
+[1] 16.22838 18.14016 16.15453
+[1] 16.33388 17.91821 16.12856
+[1] 17.82306 17.61191 17.08841
+[1] 17.81143 17.93345 17.47572
+[1] 17.77411 17.65491 17.30031
+[1] 13.36498 13.90840 13.35987
+[1] 13.34184 15.46889 13.34880
+[1] 13.18954 15.35121 13.39542

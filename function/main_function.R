@@ -54,13 +54,13 @@ X2U1 = function(X, K=50, plot = F){
   return(list(vals = eigen_vals, U = U, H = H, H0 = H0, P = P, P1 = P1, K = K, F_ = F_, F2 = F2, L = L, L2 = L2, L_res = L_res))
 }
 
-X2U2 = function(X, K=NULL, Plot = F){ 
+X2U2 = function(X, K=NULL, plot = F){ 
   # estimate the factors given K
   n = nrow(X)
   p = floor(ncol(X)/2)
   PCA.res = eigen(X%*%t(X)/n)
   eigen_vals = PCA.res$values
-  if (Plot){
+  if (plot){
     par(mfrow=c(4,1))
     plot(eigen_vals[1:(p-1)])
     plot(eigen_vals[1:(p-1)]/eigen_vals[2:(p)])
@@ -1300,9 +1300,3 @@ cv.select_threshold.method2 = function(threshold.vec, X.train.list, Y.train.list
   threshold = threshold.vec[which.min(mse.vec)]
   return(list(threshold = threshold, mse.vec = mse.vec))
 }
-
-
-
-
-
-

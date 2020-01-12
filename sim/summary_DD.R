@@ -10,9 +10,13 @@ load("/Users/MonicaW/Documents/GitHub/alpha/sim/results/proposed_model/lasso/bot
 load("/Users/MonicaW/Documents/GitHub/alpha/sim/results/proposed_model/lasso/diff/DD.RData")
 load("/Users/MonicaW/Documents/GitHub/alpha/sim/results/proposed_model/lasso/same/DD.RData")
 
+# ridge
+load("/Users/MonicaW/Documents/GitHub/alpha/sim/results/proposed_model/ridge/both/DD.RData")
+load("/Users/MonicaW/Documents/GitHub/alpha/sim/results/proposed_model/ridge/diff/DD.RData")
+
 n = 80
 x = seq(0, 40, length.out = 25)/sqrt(p)
-x = x[x <= 0.4]
+x = x[x <= 1]
 KK = length(x)-1
 
 DD_mean = do.call(rbind, lapply(0:KK, function(k) apply(DD[1:n+k*n, ], 2, mean)))
@@ -21,10 +25,11 @@ DD_sd = do.call(rbind, lapply(0:KK, function(k) apply(DD[1:n+k*n, ], 2, sd)))/sq
 AA_mean = DD_mean
 AA_sd = DD_sd
 
+
 # global
 i = 1
 plot(x, AA_mean[,i], type = "l", 
-     ylim = c(4, 6), 
+     ylim = c(min(AA_mean)-0.3, max(AA_mean)+0.3), 
      lwd = 1, lty = 5, col = "green", xlab = "h", ylab = "error")
 polygon(c(x, rev(x)), c(AA_mean[,i]+AA_sd[,i], rev(AA_mean[,i]-AA_sd[,i])), col = rgb(0, 255, 0, 20, maxColorValue=255), border = FALSE)
 
