@@ -110,15 +110,15 @@ melted_cov.U.AD <- melt(cov.U.AD)
 
 # U
 # range for cov.U across groups (-0.5 , 2.5)
-pu.NC = ggplot(data = melted_cov.U.NC, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F) + scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", lim = c(-0.5, 0.5)) 
+pu.NC = ggplot(data = melted_cov.U.NC, aes(x=Var1, y = Var2, fill=value)) + geom_tile(show.legend = F) + scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", lim = c(-0.5, 0.5)) + xlab("ROI Index") + ylab("ROI Index") 
 
 pu.SMC = ggplot(data = melted_cov.U.SMC, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
 
-pu.eMCI = ggplot(data = melted_cov.U.eMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
+pu.eMCI = ggplot(data = melted_cov.U.eMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))+ xlab("ROI Index") + ylab("ROI Index") 
 
 pu.lMCI = ggplot(data = melted_cov.U.lMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
 
-pu.AD = ggplot(data = melted_cov.U.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
+pu.AD = ggplot(data = melted_cov.U.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))+ xlab("ROI Index") + ylab("ROI Index") 
 
 
 # changing scale
@@ -162,15 +162,15 @@ melted_cov.X.AD <- melt(cov.X.AD)
 
 # X
 # range for cov.X across groups (-0.5 , 2.5)
-px.NC = ggplot(data = melted_cov.X.NC, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F) + scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", lim = c(-0.5, 0.5)) 
+px.NC = ggplot(data = melted_cov.X.NC, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F) + scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", lim = c(-0.5, 0.5)) + xlab("ROI Index") + ylab("ROI Index") 
 
 px.SMC = ggplot(data = melted_cov.X.SMC, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
 
-px.eMCI = ggplot(data = melted_cov.X.eMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
+px.eMCI = ggplot(data = melted_cov.X.eMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))+ xlab("ROI Index") + ylab("ROI Index") 
 
 px.lMCI = ggplot(data = melted_cov.X.lMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
 
-px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
+px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))+ xlab("ROI Index") + ylab("ROI Index") 
 
 
 # cor.FL.NC = cov2cor(cov.FL.NC)
@@ -197,6 +197,10 @@ px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_t
 
 grid.arrange(px.NC, px.SMC, px.eMCI, px.lMCI, px.AD, 
              pu.NC, pu.SMC, pu.eMCI, pu.lMCI, pu.AD, 
+             nrow = 2)
+
+grid.arrange(px.NC, px.eMCI, px.AD, 
+             pu.NC, pu.eMCI, pu.AD, 
              nrow = 2)
 
 

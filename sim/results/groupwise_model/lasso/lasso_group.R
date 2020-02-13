@@ -18,18 +18,19 @@ n_label = 3
 si = 2
 
 # control parameter for beta
-h = 2 # share
+# s = 1 # unique
+h = 1 # share
 
 ds = sqrt(p) # sqrt(p) multiplier parameter for spike L 
 rho = 1/25 # determine spike smaller than 1/K
 rrho = 0.1 # correlation for the core sigma matrix
-d = .05 # uniform range
+d = 0.05 # uniform range
 
 spike_factor1 = c(1, sapply(2:K, function(k) 1/gamma(k + 1)))*.7
 spike_factor2 = c(1, sapply(2:K, function(k) 1/gamma(k + 1.25)))
 spike_factor3 = c(1, sapply(2:K, function(k) 1/gamma(k + 1.5)))*1.3
 
-# plot(spike_factor2[1:(K-1)]/spike_factor2[2:K])
+#plot(spike_factor3[1:(K-1)]/spike_factor3[2:K])
 
 spike1 = spike_factor1 * ds
 spike2 = spike_factor2 * ds
@@ -49,10 +50,6 @@ u1 = 1
 u2 = 2
 u3 = 3
 
-L1 = para1$L
-L2 = para2$L
-L3 = para3$L
-
 sigma.vec = rep(si, n_label)
 
 n.train.vec = c(n, n, n)
@@ -61,6 +58,12 @@ ix.vec = c(0, cumsum(n.train.vec))
 label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.test.vec[3])))
 label.level = levels(label.test)
 
+# # Lbeta norm
+# sqrt(mean((para1$L%*%beta1)^2))
+# sqrt(mean((para2$L%*%beta2)^2))
+# sqrt(mean((para3$L%*%beta3)^2))
+
+# generate data
 DD = matrix(, nrow = 0, ncol = 4)
 for (s in seq(0, 5, by = 0.1)){
   print(s)
@@ -69,16 +72,11 @@ for (s in seq(0, 5, by = 0.1)){
     beta2_unique = c(1, 2, 1)*s
     beta3_unique = c(2, 1, 1)*s
     
-    beta1_unique = c(beta1_unique, rep(0, p-K))
-    beta2_unique = c(beta2_unique, rep(0, p-K))
-    beta3_unique = c(beta3_unique, rep(0, p-K))
+    beta_share = c(rep(h, p_share), rep(-h, p_share))
     
-    # model parameter
-    gamma1 = L1%*%beta1_unique
-    gamma2 = L2%*%beta2_unique
-    gamma3 = L3%*%beta3_unique
-    
-    beta_share = c(rep(0, K), rep(h, p_share), rep(-h, p_share), rep(0, p - 2*p_share - K))
+    beta1 = c(beta1_unique, beta_share, rep(0, p-2*p_share-3))
+    beta2 = c(beta2_unique, beta_share, rep(0, p-2*p_share-3))
+    beta3 = c(beta3_unique, beta_share, rep(0, p-2*p_share-3))
     
     F1 = mvrnorm(n, rep(0, K), diag(K))
     F2 = mvrnorm(n, rep(0, K), diag(K))
@@ -88,9 +86,9 @@ for (s in seq(0, 5, by = 0.1)){
     U2 = mvrnorm(n, rep(0, p), para2$SigmaU)
     U3 = mvrnorm(n, rep(0, p), para3$SigmaU)
     
-    X1 = F1%*%L1 + U1
-    X2 = F2%*%L2 + U2
-    X3 = F3%*%L3 + U3
+    X1 = F1%*%para1$L + U1
+    X2 = F2%*%para2$L + U2
+    X3 = F3%*%para3$L + U3
     
     X.train.list = list(X1, X2, X3)
     X.train.mean = lapply(X.train.list, colMeans)
@@ -99,10 +97,9 @@ for (s in seq(0, 5, by = 0.1)){
     eps1 = rnorm(n, sd = sigma.vec[1])
     eps2 = rnorm(n, sd = sigma.vec[2])
     eps3 = rnorm(n, sd = sigma.vec[3])
-    
-    Y1 = u1 + F1%*%gamma1 + U1%*%beta_share + eps1
-    Y2 = u2 + F2%*%gamma2 + U2%*%beta_share + eps2
-    Y3 = u3 + F3%*%gamma3 + U3%*%beta_share + eps3
+    Y1 = u1 + X1%*%beta1+ eps1
+    Y2 = u2 + X2%*%beta2+ eps2
+    Y3 = u3 + X3%*%beta3+ eps3
     
     Y.train.list = list(Y1, Y2, Y3)
     
@@ -115,19 +112,18 @@ for (s in seq(0, 5, by = 0.1)){
     U2 = mvrnorm(n, rep(0, p), para2$SigmaU)
     U3 = mvrnorm(n, rep(0, p), para3$SigmaU)
     
-    X1 = F1%*%L1 + U1
-    X2 = F2%*%L2 + U2
-    X3 = F3%*%L3 + U3
+    X1 = F1%*%para1$L + U1
+    X2 = F2%*%para2$L + U2
+    X3 = F3%*%para3$L + U3
     
     X.test.list = list(X1, X2, X3)
     
     eps1 = rnorm(n, sd = sigma.vec[1])
     eps2 = rnorm(n, sd = sigma.vec[2])
     eps3 = rnorm(n, sd = sigma.vec[3])
-    
-    Y1 = u1 + F1%*%gamma1 + U1%*%beta_share + eps1
-    Y2 = u2 + F2%*%gamma2 + U2%*%beta_share + eps2
-    Y3 = u3 + F3%*%gamma3 + U3%*%beta_share + eps3
+    Y1 = u1 + X1%*%beta1+ eps1
+    Y2 = u2 + X2%*%beta2+ eps2
+    Y3 = u3 + X3%*%beta3+ eps3
     
     Y.test.list = list(Y1, Y2, Y3)
     
@@ -142,8 +138,8 @@ for (s in seq(0, 5, by = 0.1)){
     X.test.list = lapply(1:n_label, function(ix) sweep(X.test.list[[ix]], 2, X.train.mean[[ix]]))
     
     # global lasso
-    ml.lasso.global = cv.glmnet(x=X.train, y= Y.train, alpha = 1, standardize = F)
-    # ml.lasso.global = cv.glmnet(x=X.train, y= Y.train, alpha = 1, standardize = T, intercept = T, lambda = exp(log(seq(p*2, 1))))
+    ml.lasso.global = cv.glmnet(x=X.train, y= Y.train, alpha = 1, standardize = F, intercept = T)
+    # ml.lasso.global = cv.glmnet(x=X.train, y= Y.train, alpha = 0, standardize = T, intercept = T, lambda = exp(log(seq(p*2, 1))))
     Yhat.lasso.global.test = predict(ml.lasso.global, s=ml.lasso.global$lambda.min, newx = X.test)
     mse.lasso.global.vec = sapply(label.level, function(l) mean((Yhat.lasso.global.test[label.test==l] - Y.test[label.test==l])^2))
     mse.lasso.global = sum(mse.lasso.global.vec*n.test.vec)/sum(n.test.vec)
@@ -186,8 +182,8 @@ for (s in seq(0, 5, by = 0.1)){
     # HYhat.OLS.U = U.train%*%beta.OLS.U
     
     #ridge.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0)
-    # EN.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0.5)
-    lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1, standardize = F)
+    #EN.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0.5)
+    lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1)
     ml = lasso.OLS.U
     
     # HYhat.test.OLS.list = lapply(1:n_label, function(ix) U.test.list[[ix]]%*%beta.OLS.U)
@@ -232,7 +228,7 @@ for (s in seq(0, 5, by = 0.1)){
     
     #ridge.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0)
     #EN.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 0.5)
-    lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1, standardize = F)
+    lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1)
     ml0 = lasso.OLS.U
     
     # HYhat.test.OLS.list = lapply(1:n_label, function(ix) U.test.list[[ix]]%*%beta.OLS.U)
@@ -250,8 +246,8 @@ for (s in seq(0, 5, by = 0.1)){
     #mse.ridge.OLS.list0 = compute.mse(Y.test.list, Yhat.test.ridge.OLS.list)
     #mse.EN.OLS.list0 = compute.mse(Y.test.list, Yhat.test.EN.OLS.list)
     mse.lasso.OLS.list0 = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
-    
     print(c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list0$mse, mse.lasso.OLS.list$mse))
+    
     DD = rbind(DD, c(mse.lasso.global, mse.lasso.X.class, mse.lasso.OLS.list0[[2]], mse.lasso.OLS.list[[2]]))
   }
 }

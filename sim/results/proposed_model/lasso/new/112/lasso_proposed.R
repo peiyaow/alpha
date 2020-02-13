@@ -18,7 +18,7 @@ n_label = 3
 si = 2
 
 # control parameter for beta
-h = 2 # share
+h = 1 # share
 
 ds = sqrt(p) # sqrt(p) multiplier parameter for spike L 
 rho = 1/25 # determine spike smaller than 1/K

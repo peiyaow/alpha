@@ -65,7 +65,7 @@ label.level = levels(label.test)
 
 # generate data
 DD = matrix(, nrow = 0, ncol = 4)
-for (s in seq(0, 2.5, by = 0.1)){
+for (s in seq(0, 5, by = 0.1)){
   print(s)
   for (ii in 1:50){
     beta1_unique = c(1, 1, 2)*s
@@ -74,9 +74,9 @@ for (s in seq(0, 2.5, by = 0.1)){
     
     beta_share = c(rep(h, p_share), rep(-h, p_share))
     
-    beta1 = c(beta1_unique, beta_share, rep(0, p-2*p_share-3))
-    beta2 = c(beta2_unique, beta_share, rep(0, p-2*p_share-3))
-    beta3 = c(beta3_unique, beta_share, rep(0, p-2*p_share-3))
+    beta1 = c(beta1_unique, beta_share, rep(0, p-2*p_share-3))/10
+    beta2 = c(beta2_unique, beta_share, rep(0, p-2*p_share-3))/10
+    beta3 = c(beta3_unique, beta_share, rep(0, p-2*p_share-3))/10
     
     F1 = mvrnorm(n, rep(0, K), diag(K))
     F2 = mvrnorm(n, rep(0, K), diag(K))
@@ -238,14 +238,14 @@ for (s in seq(0, 2.5, by = 0.1)){
     PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
     
     # Yhat.test.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.OLS.list[[ix]])
-    # Yhat.test.ridge.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.ridge.OLS.list[[ix]])
+    Yhat.test.ridge.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.ridge.OLS.list[[ix]])
     # Yhat.test.EN.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.EN.OLS.list[[ix]])
-    Yhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.lasso.OLS.list[[ix]])
+    # Yhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.lasso.OLS.list[[ix]])
     
     # mse.OLS.list = compute.mse(Y.test.list, Yhat.test.OLS.list)
-    # mse.ridge.OLS.list0 = compute.mse(Y.test.list, Yhat.test.ridge.OLS.list)
+    mse.ridge.OLS.list0 = compute.mse(Y.test.list, Yhat.test.ridge.OLS.list)
     # mse.EN.OLS.list0 = compute.mse(Y.test.list, Yhat.test.EN.OLS.list)
-    mse.lasso.OLS.list0 = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
+    # mse.lasso.OLS.list0 = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
     
     print(c(mse.lasso.global, mse.lasso.X.class, mse.ridge.OLS.list0$mse, mse.ridge.OLS.list$mse))
     

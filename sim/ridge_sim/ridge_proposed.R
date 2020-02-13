@@ -65,9 +65,9 @@ DD = matrix(, nrow = 0, ncol = 4)
 for (s in seq(0, 5, by = 0.1)){
   print(s)
   for (ii in 1:50){
-    beta1_unique = c(1, 1, -1)*s
-    beta2_unique = c(1, -1, 1)*s
-    beta3_unique = c(-1, 1, 1)*s
+    beta1_unique = c(1, 1, 2)*s
+    beta2_unique = c(1, 2, 1)*s
+    beta3_unique = c(2, 1, 1)*s
     
     beta1_unique = c(beta1_unique, rep(0, p-K))
     beta2_unique = c(beta2_unique, rep(0, p-K))
@@ -78,7 +78,7 @@ for (s in seq(0, 5, by = 0.1)){
     gamma2 = L2%*%beta2_unique
     gamma3 = L3%*%beta3_unique
     
-    beta_share = c(rep(h, K), rep(h, p_share), rep(-h, p_share), rep(0, p - 2*p_share - K))
+    beta_share = c(rep(0, K), rep(h, p_share), rep(-h, p_share), rep(0, p - 2*p_share - K))
     
     F1 = mvrnorm(n, rep(0, K), diag(K))
     F2 = mvrnorm(n, rep(0, K), diag(K))
@@ -157,7 +157,6 @@ for (s in seq(0, 5, by = 0.1)){
     X2U.list = lapply(1:n_label, function(ix) X2U1(X.train.list[[ix]], K = 5, plot = F))
     H.list = lapply(X2U.list, function(list) list$H)
     K.list = lapply(X2U.list, function(list) list$K)
-    markK
     P.list = lapply(X2U.list, function(list) list$P)
     L.list = lapply(X2U.list, function(list) matrix(list$L[-1,], ncol = p)) 
     

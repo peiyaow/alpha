@@ -18,7 +18,7 @@ n_label = 3
 si = 2
 
 # control parameter for beta
-h = 2 # share
+h = 1 # share
 
 ds = sqrt(p) # sqrt(p) multiplier parameter for spike L 
 rho = 1/25 # determine spike smaller than 1/K
@@ -65,9 +65,9 @@ DD = matrix(, nrow = 0, ncol = 4)
 for (s in seq(0, 5, by = 0.1)){
   print(s)
   for (ii in 1:50){
-    beta1_unique = c(1, 1, 2)*s
-    beta2_unique = c(1, 2, 1)*s
-    beta3_unique = c(2, 1, 1)*s
+    beta1_unique = c(1, 1, -1)*s
+    beta2_unique = c(1, -1, 1)*s
+    beta3_unique = c(-1, 1, 1)*s
     
     beta1_unique = c(beta1_unique, rep(0, p-K))
     beta2_unique = c(beta2_unique, rep(0, p-K))
