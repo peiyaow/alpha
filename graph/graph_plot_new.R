@@ -163,15 +163,15 @@ cov.U.AD = t(U.list[[5]])%*%U.list[[5]]/n.vec[5]
 standardize = F
 linsolver = "simplex"
 graph.FL.NC = clime(x = FL.list[[1]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = .1)
-plot.adjacency(graph.FL.NC, ix = 5)
+plot.adjacency(graph.FL.NC, ix = 1)
 
 
 
 graph.X.NC = clime(x = X.list[[1]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
 graph.U.NC = clime(x = U.list[[1]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
-
+plot.adjacency(graph.FL.NC, ix = 3)
 graph.FL.SMC = clime(x = FL.list[[2]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
-plot.adjacency(graph.FL.SMC, ix = 5)
+plot.adjacency(graph.FL.SMC, ix = 6)
 
 graph.X.SMC = clime(x = X.list[[2]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
 graph.U.SMC = clime(x = U.list[[2]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
@@ -190,7 +190,9 @@ graph.FL.AD = clime(x = FL.list[[5]], nlambda = 10, standardize = standardize, l
 graph.X.AD = clime(x = X.list[[5]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
 graph.U.AD = clime(x = U.list[[5]], nlambda = 10, standardize = standardize, linsolver = linsolver, lambda.min = 0.1)
 
-
+plot.adjacency(graph.FL.NC, ix = 5)
+plot.adjacency(graph.FL.AD, ix = 5)
+4
 
 lambda_ix = 6
 grid.arrange(plot.adjacency(graph.X.NC, ix = lambda_ix),
