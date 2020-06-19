@@ -10,6 +10,7 @@ X2U = function(X, K=50, plot = F){
     plot(eigen_vals[1:K])
     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+    par(mfrow=c(1,1))
   }
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
   F_ = PCA.res$vectors[,1:K]*sqrt(n)
@@ -36,6 +37,7 @@ X2U1 = function(X, K=50, plot = F){
     plot(eigen_vals[1:K])
     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+    par(mfrow=c(1,1))
   }
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
   F_ = cbind(1, PCA.res$vectors[,1:K]*sqrt(n))
@@ -67,6 +69,7 @@ X2U2 = function(X, K=NULL, plot = F){
     a = eigen_vals[1:(p-1)]/eigen_vals[2:(p)]
     plot(a[-(p-1)]/a[-1])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+    par(mfrow=c(1,1))
   }
   if (is.null(K)){
     #a = eigen_vals[1:(p-1)]/eigen_vals[2:(p)]
@@ -364,6 +367,7 @@ X2U3 = function(X.list, K = 50, plot = T){
     par(mfrow=c(2,1))
     plot(sort_eigen.vec[1:K])
     plot(sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)])
+    par(mfrow=c(1,1))
   }
   K = which.max(sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)])
   cut.eigen = sort_eigen.vec[K]
@@ -386,6 +390,7 @@ X2U4 = function(X.list, K = 50, plot = T){
     plot(sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)])
     a = sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)]
     plot(a[-(K)]/a[-1])
+    par(mfrow=c(1,1))
   }
   ratio.eigen = sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)]
   K = 1
@@ -420,6 +425,7 @@ X2U4.kernel = function(X.list, K = 50, gamma = NULL, plot = T){
     par(mfrow=c(2,1))
     plot(sort_eigen.vec[1:K])
     plot(sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)])
+    par(mfrow=c(1,1))
   }
   ratio.eigen = sort_eigen.vec[1:K]/sort_eigen.vec[2:(K+1)]
   K = 1
@@ -620,6 +626,7 @@ X2U.kernel = function(X, K=50, gamma = NULL, plot = T){
     plot(eigen_vals[1:K])
     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+    par(mfrow=c(1,1))
   }
   
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
@@ -650,6 +657,7 @@ X2U1.kernel = function(X, K=50, gamma = NULL, plot = F){
     plot(eigen_vals[1:K])
     plot(eigen_vals[1:K]/eigen_vals[2:(K+1)])
     plot(PCA.res$vectors[,1]*sqrt(n), PCA.res$vectors[,2]*sqrt(n))
+    par(mfrow=c(1,1))
   }
   
   K = which.max(eigen_vals[1:K]/eigen_vals[2:(K+1)])
