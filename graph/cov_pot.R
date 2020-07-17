@@ -170,7 +170,45 @@ px.eMCI = ggplot(data = melted_cov.X.eMCI, aes(x=Var1, y=Var2, fill=value)) + ge
 
 px.lMCI = ggplot(data = melted_cov.X.lMCI, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))
 
-px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F)+ scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5))+ xlab("ROI Index") + ylab("ROI Index") 
+px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = T) + 
+  scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5),
+                   guide = guide_colorbar(title = NULL,
+                                          label = T,
+                                          draw.ulim = TRUE, 
+                                          draw.llim = TRUE,
+                                          # here comes the code change:
+                                          frame.colour = NULL,
+                                          ticks = TRUE, 
+                                          nbin = 10,
+                                          label.position = "bottom",
+                                          barwidth =20,
+                                          barheight = 1, 
+                                          direction = 'horizontal'))+ xlab("ROI Index") + ylab("ROI Index") +
+  theme(legend.text = element_text(size=15))
+
+
+g_legend<-function(a.gplot){
+  tmp <- ggplot_gtable(ggplot_build(a.gplot))
+  leg <- which(sapply(tmp$grobs, function(x) x$name) == "guide-box")
+  legend <- tmp$grobs[[leg]]
+  return(legend)}
+
+mylegend<-g_legend(px.AD)
+
+px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_tile(show.legend = F) + 
+  scale_fill_scico(breaks = c(-0.5, 0, 0.5), labels=c(-0.5, 0, 2.5), palette = "roma", limits = c(-0.5, 0.5),
+                   guide = guide_colorbar(title = NULL,
+                                          label = T,
+                                          draw.ulim = TRUE, 
+                                          draw.llim = TRUE,
+                                          # here comes the code change:
+                                          frame.colour = NULL,
+                                          ticks = TRUE, 
+                                          nbin = 10,
+                                          label.position = "right",
+                                          barwidth = 1.3,
+                                          barheight = 13, 
+                                          direction = 'vertical'))+ xlab("ROI Index") + ylab("ROI Index") 
 
 
 # cor.FL.NC = cov2cor(cov.FL.NC)
@@ -195,13 +233,14 @@ px.AD = ggplot(data = melted_cov.X.AD, aes(x=Var1, y=Var2, fill=value)) + geom_t
 
 
 
-grid.arrange(px.NC, px.SMC, px.eMCI, px.lMCI, px.AD, 
-             pu.NC, pu.SMC, pu.eMCI, pu.lMCI, pu.AD, 
-             nrow = 2)
+# grid.arrange(px.NC, px.SMC, px.eMCI, px.lMCI, px.AD, 
+#              pu.NC, pu.SMC, pu.eMCI, pu.lMCI, pu.AD, 
+#              nrow = 2)
 
 grid.arrange(px.NC, px.eMCI, px.AD, 
              pu.NC, pu.eMCI, pu.AD, 
-             nrow = 2)
+             mylegend,
+             nrow = 3, heights = c(10,10,1), layout_matrix = rbind(c(1,2,3), c(4,5,6), c(7,7,7)))
 
 
 
