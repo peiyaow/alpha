@@ -160,7 +160,7 @@ for (s in seq(0, 5, by = 0.1)){
   lambdapath = exp(seq(10, log(.01), length.out = 50))
   
   MSE = matrix(, nrow = 0, ncol = 3)
-  for (lambda in lambdapath[50]){
+  for (lambda in lambdapath){
     for (C in seq(0, 1, length.out = 21)){
       SigmaU = POET(t(U.train), K = 0, C = C, thres = "soft", matrix = "vad")$SigmaU
       scout.beta = scout_POET(U.train, HY.train, SigmaU, lambda = lambda, alpha = 0)
