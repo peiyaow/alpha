@@ -22,12 +22,12 @@ p = 200
 n = 100
 K = 3
 
-p_share = 80 # ridge 80 lasso 10
+p_share = 10 # ridge 80 lasso 10
 n_label = 3
 si = 2
 
 # control parameter for beta
-h = 1 # share
+h = 2 # share
 
 ds = 10 # sqrt(p) multiplier parameter for spike L 
 rho = 1/40 # determine spike smaller than 1/K
@@ -65,7 +65,6 @@ label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.
 label.level = levels(label.test)
 
 for (s in seq(0, 5, by = 0.1)){
-  
   gamma1 = c(1, 1, 2)*s
   gamma2 = c(1, 2, 1)*s
   gamma3 = c(2, 1, 1)*s
@@ -123,11 +122,6 @@ for (s in seq(0, 5, by = 0.1)){
   
   Y.test.list = list(Y1, Y2, Y3)
   
-  X.train = do.call(rbind, X.train.list)
-  X.test = do.call(rbind, X.test.list)
-  Y.train = do.call(c, Y.train.list)
-  Y.test = do.call(c, Y.test.list)
-  
   X.train.mean = lapply(X.train.list, colMeans)
   X.train.sd = lapply(X.train.list, function(X) apply(X, 2, sd))
   X.train.list = lapply(1:n_label, function(ix) sweep(X.train.list[[ix]], 2, X.train.mean[[ix]]))
@@ -157,13 +151,17 @@ for (s in seq(0, 5, by = 0.1)){
   HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
   HY.train = do.call(c, HY.train.list)
   
-  lambdapath = exp(seq(10, log(.01), length.out = 50))
+  # initialize lambda
+  lambda.max = glmnet.lambda_max(U.train, HY.train, 1)
+  epsilon <- .01
+  lambdapath <- exp(seq(log(lambda.max), log(lambda.max*epsilon), 
+                        length.out = 50))
   
   MSE = matrix(, nrow = 0, ncol = 3)
-  for (lambda in lambdapath[50]){
+  for (lambda in lambdapath){
     for (C in seq(0, 1, length.out = 21)){
       SigmaU = POET(t(U.train), K = 0, C = C, thres = "soft", matrix = "vad")$SigmaU
-      scout.beta = scout_POET(U.train, HY.train, SigmaU, lambda = lambda, alpha = 0)
+      scout.beta = scout_POET(U.train, HY.train, SigmaU, lambda = lambda, alpha = 1)
       HYhat.test.OLS.list = lapply(1:n_label, function(ix) U.test.list[[ix]]%*%scout.beta)
       PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
       Yhat.test.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.OLS.list[[ix]])
@@ -171,6 +169,7 @@ for (s in seq(0, 5, by = 0.1)){
       MSE = rbind(MSE, mse.OLS.list$mse.vec)
     }
   }
-  file.name = paste0("result_ridge_C_s=", format(s, nsmall = 1), ".csv")
+  file.name = paste0("result_lasso_C_s=", format(s, nsmall = 1), ".csv")
   write.table(t(c(myseed, as.vector(MSE))), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 }
+  
