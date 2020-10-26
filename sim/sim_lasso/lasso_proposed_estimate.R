@@ -189,18 +189,25 @@ for (s in seq(0, 5, by = 0.1)){
     ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
     
     D1 = diag(eigen(X.train.list[[1]]%*%t(X.train.list[[1]]))$values[1:K.list[[1]]])
-    H1 = solve(D1)%*%t(F.train.list[[1]][,-1])%*%F1.train%*%L1%*%t(L1)
+    H1 = solve(D1)%*%t(F.train.list[[1]][,-1])%*%F1.train%*%L1%*%t(L1) # Khat1 by K1
     
     D2 = diag(eigen(X.train.list[[2]]%*%t(X.train.list[[2]]))$values[1:K.list[[2]]])
-    H2 = solve(D2)%*%t(F.train.list[[2]][,-1])%*%F2.train%*%L2%*%t(L2)
+    H2 = solve(D2)%*%t(F.train.list[[2]][,-1])%*%F2.train%*%L2%*%t(L2) # Khat2 by K2
     
     D3 = diag(eigen(X.train.list[[3]]%*%t(X.train.list[[3]]))$values[1:K.list[[3]]])
-    H3 = solve(D3)%*%t(F.train.list[[3]][,-1])%*%F3.train%*%L3%*%t(L3)
+    H3 = solve(D3)%*%t(F.train.list[[3]][,-1])%*%F3.train%*%L3%*%t(L3) # Khat3 by K3
     
-    gammas.oracle = cbind(H1%*%gamma1, H2%*%gamma2, H3%*%gamma3)
-    gammas.hat = cbind(ml.lm.F.list[[1]]$coefficients[-1], 
-                       ml.lm.F.list[[2]]$coefficients[-1],
-                       ml.lm.F.list[[3]]$coefficients[-1])
+    gamma1.oracle = H1%*%gamma1
+    gamma2.oracle = H2%*%gamma2
+    gamma3.oracle = H3%*%gamma3
+    
+    gamma1.hat = ml.lm.F.list[[1]]$coefficients[-1]
+    gamma2.hat = ml.lm.F.list[[2]]$coefficients[-1]
+    gamma3.hat = ml.lm.F.list[[3]]$coefficients[-1]
+    
+    diff.gamma = c(mean((gamma1.hat - gamma1.oracle)^2), 
+                   mean((gamma2.hat - gamma2.oracle)^2),
+                   mean((gamma3.hat - gamma3.oracle)^2))
     
     diff.gamma = apply(gammas.oracle - gammas.hat, 2, function(diff) mean(diff^2))
     DIFF.gamma = list.append(DIFF.gamma, diff.gamma)
