@@ -1,11 +1,3 @@
-# ---------------------- reading shell command --------------------- 
-args = (commandArgs(TRUE))
-cat(args, "\n")
-for (i in 1:length(args)) {
-  eval(parse(text = args[[i]]))
-}
-# ------------------------------------------------------------------
-
 library(glmnet)
 require(methods)
 library(rlist)
@@ -65,7 +57,7 @@ label.train = as.factor(c(rep(1, n.train.vec[1]), rep(2, n.train.vec[2]), rep(3,
 label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.test.vec[3])))
 label.level = levels(label.test)
 
-for (s in seq(0, 5, by = 0.1)[1:2]){
+for (s in seq(0, 5, by = 0.1)){
   gamma1 = c(1, 1, 2)*s
   gamma2 = c(1, 2, 1)*s
   gamma3 = c(2, 1, 1)*s
@@ -79,7 +71,7 @@ for (s in seq(0, 5, by = 0.1)[1:2]){
   MSE.test = list()
   SS = list()
   
-  for (ii in 1:2){
+  for (ii in 1:50){
     F1 = mvrnorm(n, rep(0, K), diag(K))
     F2 = mvrnorm(n, rep(0, K), diag(K))
     F3 = mvrnorm(n, rep(0, K), diag(K))
