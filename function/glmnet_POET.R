@@ -22,6 +22,35 @@ scout_POET = function(X, Y, Sigma, lambda = 0, alpha = 0){
   return(scout.beta)
 }
 
+cv.scout_POET = function(X, Y, C, lambda, alpha = 0, nfolds = 10){
+  flds = createFolds(Y, k = nfolds, list = TRUE, returnTrain = FALSE)
+  n_C = length(C)
+  n_lambda = length(lambda)
+  MSE.list = list()
+  for (k in 1:nfolds){
+    X.train = X[unlist(flds[-k]), ]
+    X.val = X[unlist(flds[k]), ]
+    Y.train = matrix(Y[unlist(flds[-k])])
+    Y.val = matrix(Y[unlist(flds[k])])
+    
+    Sigma.list = lapply(C, function(c) POET(t(X.train), K = 0, C = c, thres = "soft", matrix = "vad")$SigmaU)
+    beta.list = lapply(lambda, function(lam) sapply(Sigma.list, function(Sigma) scout_POET(X.train, Y.train, Sigma, lambda = lam, alpha = 0)))
+    Yhat.list = lapply(beta.list, function(beta) X.val%*%beta)
+    result = sapply(Yhat.list, function(Yhat) apply(Yhat - as.vector(Y.val), 2, function(x) mean(x^2)))
+    MSE.list[[k]] = matrix(result, ncol = n_lambda)
+  }
+  MSE = Reduce("+", MSE.list)/nfolds
+  absBest.ix = which.min(MSE)
+  row.ix = (absBest.ix-1)%%(n_C)+1
+  col.ix = ceiling(absBest.ix/n_C)
+  best.lambda = lambda[col.ix]
+  best.C = C[row.ix]
+  
+  return(list(MSE = MSE, best.C.ix = row.ix, best.lambda.ix = col.ix, 
+              best.lambda = best.lambda,
+              best.C = best.C))
+}
+
 glmnet.lambda_max= function(X, Y, alpha){
   n = nrow(X)
   max(abs(t(Y - mean(Y)*(1-mean(Y))) %*% X ))/(alpha * n) # largest lambda value

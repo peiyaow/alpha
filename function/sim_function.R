@@ -2,6 +2,22 @@ library(MASS)
 library(POET)
 library(pracma)
 
+SOLVE = function(x){ # input must be matrix
+  if (sum(dim(x))){
+    return(solve(x))
+  }else{
+    return(x)
+  }
+}
+
+DIAG = function(e){
+  if (length(e) > 1){
+    return(diag(e))
+  }else{
+    return(matrix(e))
+  }
+}
+
 FactorModelPara = function(n = 100, p = 200, K = 3, spike = c(40, 20, 4)/2, d = 0.1, du = 0.3, rrho = 0.1){
   # K: number of factors
   # spike: K spiked eigenvalues
@@ -18,7 +34,7 @@ FactorModelPara = function(n = 100, p = 200, K = 3, spike = c(40, 20, 4)/2, d = 
   eigen.res = eigen(LtL)
   V = eigen.res$vectors
   Q = randortho(K, type = "orthonormal")
-  L1 = Q%*%sqrt(diag(eigen.res$values))%*%t(V)
+  L1 = Q%*%sqrt(DIAG(eigen.res$values))%*%t(V)
   
   TT = matrix(runif((p-K)*K, min = -d, max = d), nrow = K)
   L2 = Q%*%TT

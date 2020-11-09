@@ -14,7 +14,7 @@ p = 200
 n = 100
 K = 3
 
-p_share = 10 # ridge 80 lasso 5
+p_share = 80 # ridge 80 lasso 5
 n_label = 3
 si = 2
 
@@ -26,19 +26,24 @@ rho = 1/40 # determine spike smaller than 1/K
 rrho = 0.1 # correlation for the core sigma matrix
 d = .05 # uniform range
 
-spike_factor1 = c(1, sapply(2:K, function(k) 1/gamma(k + 1)))*.7
-spike_factor2 = c(1, sapply(2:K, function(k) 1/gamma(k + 1.25)))
-spike_factor3 = c(1, sapply(2:K, function(k) 1/gamma(k + 1.5)))*1.3
+spike1 = c(10)
+spike2 = c(9, 4)
+spike3 = c(8, 3, 2)
+K1 = 1
+K2 = 2
+K3 = 3
+du = (spike1[K1]*rho+spike2[K2]*rho + spike3[K3]*rho)/3
+para1 = FactorModelPara(n, p, K1, spike = spike1, d, du = du, rrho)
+para2 = FactorModelPara(n, p, K2, spike = spike2, d, du = du, rrho)
+para3 = FactorModelPara(n, p, K3, spike = spike3, d, du = du, rrho)
 
-spike1 = spike_factor1 * ds
-spike2 = spike_factor2 * ds
-spike3 = spike_factor3 * ds
-
-du = (spike1[K]*rho+spike2[K]*rho + spike3[K]*rho)/3
-
-para1 = FactorModelPara(n, p, K, spike = spike1, d, du = du, rrho)
-para2 = FactorModelPara(n, p, K, spike = spike2, d, du = du, rrho)
-para3 = FactorModelPara(n, p, K, spike = spike3, d, du = du, rrho)
+# spike1 = c(10, 5, 3)
+# spike2 = c(9, 4, 2)
+# spike3 = c(8, 3, 2)
+# du = (spike1[K]*rho+spike2[K]*rho + spike3[K]*rho)/3
+# para1 = FactorModelPara(n, p, K, spike = spike1, d, du = du, rrho)
+# para2 = FactorModelPara(n, p, K, spike = spike2, d, du = du, rrho)
+# para3 = FactorModelPara(n, p, K, spike = spike3, d, du = du, rrho)
 
 u1 = 1
 u2 = 2
@@ -57,13 +62,19 @@ label.train = as.factor(c(rep(1, n.train.vec[1]), rep(2, n.train.vec[2]), rep(3,
 label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.test.vec[3])))
 label.level = levels(label.test)
 
+lambdapath = exp(seq(10, log(.01), length.out = 100))
+
 for (s in seq(0, 5, by = 0.1)){
-  gamma1 = c(1, 1, 2)*s
-  gamma2 = c(1, 2, 1)*s
-  gamma3 = c(2, 1, 1)*s
+  # gamma1 = c(1, 1, 2)*s
+  # gamma2 = c(1, 2, 1)*s
+  # gamma3 = c(2, 1, 1)*s
+  
+  gamma1 = c(1)*s
+  gamma2 = c(1, 1)*s
+  gamma3 = c(1, 1, 1)*s
+  
   beta_share = c(rep(h, p_share), rep(0, p/2-p_share), rep(-h, p_share), rep(0, p/2-p_share))
   
-  #  prefix = paste0('s=', s)
   DIFF.gamma = list()
   DIFF.beta = list()
   MSE.train = list()
@@ -72,9 +83,13 @@ for (s in seq(0, 5, by = 0.1)){
   SS = list()
   
   for (ii in 1:50){
-    F1 = mvrnorm(n, rep(0, K), diag(K))
-    F2 = mvrnorm(n, rep(0, K), diag(K))
-    F3 = mvrnorm(n, rep(0, K), diag(K))
+    # F1 = mvrnorm(n, rep(0, K), diag(K))
+    # F2 = mvrnorm(n, rep(0, K), diag(K))
+    # F3 = mvrnorm(n, rep(0, K), diag(K))
+    
+    F1 = mvrnorm(n, rep(0, K1), diag(K1))
+    F2 = mvrnorm(n, rep(0, K2), diag(K2))
+    F3 = mvrnorm(n, rep(0, K3), diag(K3))
     
     F1.train = F1
     F2.train = F2
@@ -107,9 +122,13 @@ for (s in seq(0, 5, by = 0.1)){
     Y.train.list = list(Y1, Y2, Y3)
     
     # testing
-    F1 = mvrnorm(n, rep(0, K), diag(K))
-    F2 = mvrnorm(n, rep(0, K), diag(K))
-    F3 = mvrnorm(n, rep(0, K), diag(K))
+    # F1 = mvrnorm(n, rep(0, K), diag(K))
+    # F2 = mvrnorm(n, rep(0, K), diag(K))
+    # F3 = mvrnorm(n, rep(0, K), diag(K))
+    
+    F1 = mvrnorm(n, rep(0, K1), diag(K1))
+    F2 = mvrnorm(n, rep(0, K2), diag(K2))
+    F3 = mvrnorm(n, rep(0, K3), diag(K3))
     
     U1 = mvrnorm(n, rep(0, p), para1$SigmaU)
     U2 = mvrnorm(n, rep(0, p), para2$SigmaU)
@@ -142,7 +161,8 @@ for (s in seq(0, 5, by = 0.1)){
     X.test.list = lapply(1:n_label, function(ix) sweep(X.test.list[[ix]], 2, X.train.mean[[ix]]))
     
     # global model
-    ml.global = cv.glmnet(x = X.train, y = Y.train, alpha = 1, standardize = F)
+    ml.global = cv.glmnet(x = X.train, y = Y.train, alpha = 0, 
+                          standardize = F, lambda = lambdapath)
     
     Yhat.global.train = predict(ml.global, s=ml.global$lambda.min, newx = X.train)
     mse.global.train.vec = sapply(label.level, function(l) 
@@ -156,7 +176,8 @@ for (s in seq(0, 5, by = 0.1)){
     
     # class lasso
     ml.class = lapply(1:n_label, function(ix) 
-      cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], standardize = F, alpha = 1))
+      cv.glmnet(x=X.train.list[[ix]], y=Y.train.list[[ix]], 
+                standardize = F, alpha = 0, lambda = lambdapath))
     Yhat.class.train = lapply(1:n_label, function(ix) 
       predict(ml.class[[ix]], s=ml.class[[ix]]$lambda.min, newx = X.train.list[[ix]]))
     mse.class.train.vec = sapply(1:n_label, function(ix) 
@@ -188,14 +209,14 @@ for (s in seq(0, 5, by = 0.1)){
                                                                   F.train.list[[ix]][,-1]))
     ml.lm.F.list = lapply(1:n_label, function(l) lm(Y~., data = data.F.train.list[[l]]))
     
-    D1 = diag(eigen(X.train.list[[1]]%*%t(X.train.list[[1]]))$values[1:K.list[[1]]])
-    H1 = solve(D1)%*%t(F.train.list[[1]][,-1])%*%F1.train%*%L1%*%t(L1) # Khat1 by K1
+    D1 = DIAG(eigen(X.train.list[[1]]%*%t(X.train.list[[1]]))$values[1:K.list[[1]]])
+    H1 = solve(D1)%*%t(F.train.list[[1]][,-1])%*%F1.train%*%L1%*%t(L1)
     
-    D2 = diag(eigen(X.train.list[[2]]%*%t(X.train.list[[2]]))$values[1:K.list[[2]]])
-    H2 = solve(D2)%*%t(F.train.list[[2]][,-1])%*%F2.train%*%L2%*%t(L2) # Khat2 by K2
+    D2 = DIAG(eigen(X.train.list[[2]]%*%t(X.train.list[[2]]))$values[1:K.list[[2]]])
+    H2 = solve(D2)%*%t(F.train.list[[2]][,-1])%*%F2.train%*%L2%*%t(L2)
     
-    D3 = diag(eigen(X.train.list[[3]]%*%t(X.train.list[[3]]))$values[1:K.list[[3]]])
-    H3 = solve(D3)%*%t(F.train.list[[3]][,-1])%*%F3.train%*%L3%*%t(L3) # Khat3 by K3
+    D3 = DIAG(eigen(X.train.list[[3]]%*%t(X.train.list[[3]]))$values[1:K.list[[3]]])
+    H3 = solve(D3)%*%t(F.train.list[[3]][,-1])%*%F3.train%*%L3%*%t(L3)
     
     gamma1.oracle = H1%*%gamma1
     gamma2.oracle = H2%*%gamma2
@@ -217,7 +238,8 @@ for (s in seq(0, 5, by = 0.1)){
     HY.train = do.call(c, HY.train.list)
     
     # original
-    ml.alpha = cv.glmnet(x = U.train, y = HY.train, alpha = 1, standardize = F)  
+    ml.alpha = cv.glmnet(x = U.train, y = HY.train, alpha = 0, standardize = F, 
+                         lambda = lambdapath) 
     beta.alpha = coef(ml.alpha, s=ml.alpha$lambda.min)[-1]
     beta1.group = coef(ml.class[[1]], s=ml.class[[1]]$lambda.min)[-1]
     beta2.group = coef(ml.class[[2]], s=ml.class[[2]]$lambda.min)[-1]
@@ -280,7 +302,8 @@ for (s in seq(0, 5, by = 0.1)){
     HY.train.list = lapply(1:n_label, function(ix) H.list[[ix]]%*%Y.train.list[[ix]])
     HY.train = do.call(c, HY.train.list)
     
-    ml.alpha = cv.glmnet(x = U.train, y = HY.train, alpha = 1, standardize = F)
+    ml.alpha = cv.glmnet(x = U.train, y = HY.train, alpha = 0, standardize = F, 
+                         lambda = lambdapath)
     
     PYhat.alpha.train.list = lapply(1:n_label, function(ix) ml.lm.F.list[[ix]]$fitted.values)
     HYhat.alpha.train.list = lapply(1:n_label, function(ix) 
@@ -308,9 +331,10 @@ for (s in seq(0, 5, by = 0.1)){
     MSE.train.alpha = list.append(MSE.train.alpha, mse.train.alpha)
     MSE.test = list.append(MSE.test, mse.test)
   }
-  file.name = paste0("result_lasso_estimate_s=", format(s, nsmall = 1), ".RData")
+  file.name = paste0("result_ridge_estimate_s=", format(s, nsmall = 1), ".RData")
   save(DIFF.gamma, DIFF.beta, MSE.train, MSE.train.alpha, MSE.test, SS, file = file.name)
 }
+
 
 
 

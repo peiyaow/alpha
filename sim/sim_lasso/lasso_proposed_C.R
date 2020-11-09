@@ -22,6 +22,9 @@ p = 200
 n = 100
 K = 3
 
+n_C = 21
+n_lambda = 50
+
 p_share = 10 # ridge 80 lasso 10
 n_label = 3
 si = 2
@@ -64,7 +67,7 @@ ix.vec = c(0, cumsum(n.train.vec))
 label.test = as.factor(c(rep(1, n.test.vec[1]), rep(2, n.test.vec[2]), rep(3, n.test.vec[3])))
 label.level = levels(label.test)
 
-for (s in seq(0, 5, by = 0.1)){
+for (s in c(0, 2, 4)){
   gamma1 = c(1, 1, 2)*s
   gamma2 = c(1, 2, 1)*s
   gamma3 = c(2, 1, 1)*s
@@ -155,11 +158,12 @@ for (s in seq(0, 5, by = 0.1)){
   lambda.max = glmnet.lambda_max(U.train, HY.train, 1)
   epsilon <- .01
   lambdapath <- exp(seq(log(lambda.max), log(lambda.max*epsilon), 
-                        length.out = 50))
+                        length.out = n_lambda)) # 50
+  C_path = seq(0, 1, length.out = n_C) # 21
   
   MSE = matrix(, nrow = 0, ncol = 3)
   for (lambda in lambdapath){
-    for (C in seq(0, 1, length.out = 21)){
+    for (C in C_path){
       SigmaU = POET(t(U.train), K = 0, C = C, thres = "soft", matrix = "vad")$SigmaU
       scout.beta = scout_POET(U.train, HY.train, SigmaU, lambda = lambda, alpha = 1)
       HYhat.test.OLS.list = lapply(1:n_label, function(ix) U.test.list[[ix]]%*%scout.beta)
@@ -171,5 +175,35 @@ for (s in seq(0, 5, by = 0.1)){
   }
   file.name = paste0("result_lasso_C_s=", format(s, nsmall = 1), ".csv")
   write.table(t(c(myseed, as.vector(MSE))), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
+
+  # scout POET
+  cv.ml = cv.scout_POET(U.train, HY.train, 
+                        C = C_path, 
+                        lambda = lambdapath, 
+                        alpha = 1, nfolds = 10)
+  MSE.scout_POET = MSE[cv.ml$best.C.ix + n_C*(cv.ml$best.lambda.ix-1), ]
+  
+  # fix C = 0 scout
+  cv.ml_C_0 = cv.scout_POET(U.train, HY.train, 
+                            C = c(0), 
+                            lambda = lambdapath, 
+                            alpha = 1, nfolds = 10)
+  MSE.scout_POET_C_0 = MSE[1 + n_C*(cv.ml_C_0$best.lambda.ix-1), ]
+  
+  # cv glmnet
+  lasso.OLS.U = cv.glmnet(x = U.train, y = HY.train, alpha = 1, standardize = F,
+                          lambda = lambdapath)
+  
+  HYhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) predict(lasso.OLS.U, s=lasso.OLS.U$lambda.min, U.test.list[[ix]]))
+  PYhat.test.list = lapply(1:n_label, function(ix) F.test.list[[ix]]%*%ml.lm.F.list[[ix]]$coefficients)
+  
+  Yhat.test.lasso.OLS.list = lapply(1:n_label, function(ix) PYhat.test.list[[ix]] + HYhat.test.lasso.OLS.list[[ix]])
+  
+  mse.lasso.OLS.list = compute.mse(Y.test.list, Yhat.test.lasso.OLS.list)
+  
+  MSE.cv = rbind(MSE.scout_POET, MSE.scout_POET_C_0, mse.lasso.OLS.list$mse.vec)
+  
+  file.name = paste0("result_lassocv_C_s=", format(s, nsmall = 1), ".csv")
+  write.table(t(c(cv.ml$best.C.ix, cv.ml$best.lambda.ix, as.vector(MSE.cv))), file = file.name, sep = ',', append = T, col.names = F, row.names = F)
 }
   

@@ -63,7 +63,6 @@ for (s in seq(0, 5, by = 0.1)){
   gamma3 = c(2, 1, 1)*s
   beta_share = c(rep(h, p_share), rep(0, p/2-p_share), rep(-h, p_share), rep(0, p/2-p_share))
   
-#  prefix = paste0('s=', s)
   DIFF.gamma = list()
   DIFF.beta = list()
   MSE.train = list()
@@ -212,7 +211,6 @@ for (s in seq(0, 5, by = 0.1)){
                    mean((gamma2.hat - gamma2.oracle)^2),
                    mean((gamma3.hat - gamma3.oracle)^2))
     
-    diff.gamma = apply(gammas.oracle - gammas.hat, 2, function(diff) mean(diff^2))
     DIFF.gamma = list.append(DIFF.gamma, diff.gamma)
     
     # OLS.U
